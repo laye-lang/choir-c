@@ -14,6 +14,11 @@ int main(int argc, char** argv) {
             fprintf(stderr, "  ::  %s", token_spelling);
         }
 
+        ch_token_key token_key = ch_token_kind_key_get(kind);
+        if (token_key != CH_TKKEY_NOT_KW) {
+            fprintf(stderr, "  ::  %d", token_key);
+        }
+
         fprintf(stderr, "\n");
     }
 

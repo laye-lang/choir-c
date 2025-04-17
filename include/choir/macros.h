@@ -1,7 +1,7 @@
 #ifndef CHOIR_MACROS_H_
 #define CHOIR_MACROS_H_
 
-#if __STDC_VERSION__ < 202311L
+#if __STDC_VERSION__ < 202311L || (defined(_MSC_VER) && !defined(__clang__))
 #    define nullptr NULL
 #endif
 

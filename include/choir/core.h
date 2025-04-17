@@ -32,6 +32,7 @@ typedef ptrdiff_t isize;
 
 /// @brief Describes under what circumstances a given keyword is available.
 typedef enum ch_token_key {
+    CH_TKKEY_NOT_KW = 0,
     /// @brief Indicates a keyword is available in all variants of C.
     CH_TKKEY_C = 1 << 0,
     /// @brief Indicates a keyword is available in all variants of Laye.
@@ -74,9 +75,14 @@ typedef enum ch_token_kind {
 CHOIR_API const char* ch_token_kind_name_get(ch_token_kind kind);
 
 /// @brief Returns the spelling of this token kind if it is represented by a single spelling or a canonical spelling from among aliases.
-/// Otherwise returns NULL.
+/// Otherwise returns `NULL`.
 /// @ref ch_token_kind
 CHOIR_API const char* ch_token_kind_spelling_get(ch_token_kind kind);
+
+/// @brief Returns the keyword availability flags for this token kind if it's a keyword.
+/// Otherwise returns `CH_TKKEY_NOT_KW`.
+/// @ref ch_token_kind
+CHOIR_API ch_token_key ch_token_kind_key_get(ch_token_kind kind);
 
 #if defined(__cplusplus)
 }
