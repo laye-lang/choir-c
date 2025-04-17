@@ -1,0 +1,7 @@
+-Iinclude
+-std=c23
+-Wall
+-Werror
+-Werror=return-type
+-pedantic
+-pedantic-errors
