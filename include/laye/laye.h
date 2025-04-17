@@ -454,7 +454,7 @@ typedef struct ly_location {
     ly_source* source;
     int64_t offset : 48;
     int64_t length : 16;
-};
+} ly_location;
 
 /// @brief
 typedef struct ly_token {
