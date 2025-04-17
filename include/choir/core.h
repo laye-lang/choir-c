@@ -51,7 +51,7 @@ typedef enum ch_token_key {
 /// @brief Describes the kind of a source text token.
 /// @ref ch_token
 typedef enum ch_token_kind {
-#define CH_TOKEN(id)    CH_TK_##id,
+#define CH_TOKEN(id) CH_TK_##id,
 #include "tokens.inc"
     CH_TOKEN_KIND_COUNT,
 } ch_token_kind;

@@ -1,5 +1,5 @@
 #include <stdio.h>
-
+/// include choir last
 #include <choir/core.h>
 
 int main(int argc, char** argv) {
