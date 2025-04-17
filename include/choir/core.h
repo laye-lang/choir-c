@@ -14,6 +14,10 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 
+///===--------------------------------------===///
+/// Data types.
+///===--------------------------------------===///
+
 typedef int8_t int8;
 typedef int16_t int16;
 typedef int32_t int32;
@@ -29,6 +33,42 @@ typedef double float64;
 
 typedef size_t usize;
 typedef ptrdiff_t isize;
+
+/// @brief An immutable view into underlying, non-owned string data.
+typedef struct ch_sting_view {
+    const char* data;
+    isize count;
+} ch_string_view;
+
+/// @brief A mutable, owning string builder.
+typedef struct ch_string {
+    DA_DECLARE_INLINE(char);
+} ch_string;
+
+/// @brief Source text from any language or input source.
+typedef struct ch_source {
+    /// @brief The name of this source, usually a canonical file path for a source file or an angle-bracketted '<compiler-internal>' name.
+    ch_string_view name;
+    /// @brief The full text of this source.
+    ch_string_view text;
+    /// @brief True if this source represents a "system" file and should be treated more lax by the language semantics.
+    /// Used primarily for system C headers, which may make liberal use of extensions or incompatible features.
+    bool is_system_source : 1;
+} ch_source;
+
+/// @brief A 0-based byte location within the text of a source.
+typedef isize ch_location;
+
+/// @brief A 0-based byte range within the text of the referenced source.
+/// The byte length of this range is given by 'end' - 'begin'.
+typedef struct ch_range {
+    /// @brief The source this range applies to.
+    ch_source* source;
+    /// @brief The beginning byte offset of this range.
+    ch_location begin;
+    /// @brief The ending byte offset of this range.
+    ch_location end;
+} ch_range;
 
 /// @brief Describes under what circumstances a given keyword is available.
 typedef enum ch_token_key {
@@ -70,6 +110,51 @@ typedef enum ch_token_kind {
     CH_TOKEN_KIND_COUNT,
 } ch_token_kind;
 
+/// @brief Token information for all variants of C and Laye.
+/// @ref ch_token_kind
+typedef struct ch_token {
+    /// @brief The kind of this token.
+    /// Also used as a tag to select active data from the contained union, if applicable.
+    ch_token_kind kind;
+
+    /// @brief True if this token is the first on its line, preceded only by whitespace or delimited comments.
+    bool at_start_of_line : 1;
+    /// @brief True if this token has any whitespace before it, including line breaks and comments.
+    bool has_whitespace_before : 1;
+    /// @brief True if this token should not be considered for macro expansion.
+    bool expansion_disabled : 1;
+    
+    /// @brief The source range of this token.
+    ch_range range;
+
+    union {
+        /// @brief The textual value of this token for identifiers, preprocessing numbers and keywords.
+        ch_string_view text_value;
+        /// @brief The value of this character constant.
+        int32 character_constant;
+        /// @brief The value of this integer constant.
+        int64 integer_constant;
+        /// @brief The value of this floating constant.
+        double floating_constant;
+        /// @brief The value of this string literal.
+        ch_string_view string_literal;
+    };
+} ch_token;
+
+DA_DECLARE(ch_tokens, ch_token);
+
+///===--------------------------------------===///
+/// Strings API.
+///===--------------------------------------===///
+
+///===--------------------------------------===///
+/// Context API.
+///===--------------------------------------===///
+
+///===--------------------------------------===///
+/// Token API.
+///===--------------------------------------===///
+
 /// @brief Returns the name of the enum constant associated with this token kind.
 /// @ref ch_token_kind
 CHOIR_API const char* ch_token_kind_get_name(ch_token_kind kind);
@@ -84,6 +169,14 @@ CHOIR_API const char* ch_token_kind_get_spelling(ch_token_kind kind);
 /// @ref ch_token_kind
 /// @ref ch_token_key
 CHOIR_API ch_token_key ch_token_kind_get_key(ch_token_kind kind);
+
+///===--------------------------------------===///
+/// Lexer API.
+///===--------------------------------------===///
+
+///===--------------------------------------===///
+/// Preprocessor API.
+///===--------------------------------------===///
 
 #if defined(__cplusplus)
 }
