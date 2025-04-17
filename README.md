@@ -1,9 +1,9 @@
-# CLaye - A Laye Compiler Written in C
+# Choir-C - Compilers for the Laye and C Programming Languages, Written in C
 
-The CLaye project aims to implement "[standard](https://github.com/laye-lang/laye-docs)" Laye toolchain for bootstrapping purposes.
-It is not desirable to end up in a situation where only a self hosted compiler is available, so CLaye is developed and maintained alongside the "official" [self-hosted implementation](https://github.com/laye-lang/laye).
+The Choir-C project aims to implement "[standard](https://github.com/laye-lang/laye-docs)" Laye compiler tooling for bootstrapping purposes.
+It is not desirable to end up in a situation where only a self hosted compiler is available, so Choir-C is developed and maintained alongside the "official" [self-hosted implementation](https://github.com/laye-lang/choir).
 
-These projects are very work-in-progress as the [temporary bootstrap compiler](https://github.com/laye-lang/choir) is under rapid development to experiment with the language and naturally discover what Laye wants to be.
+These projects are very work-in-progress as the [temporary bootstrap compiler](https://github.com/laye-lang/layec-dotnet) is under rapid development to experiment with the language and naturally discover what Laye wants to be.
 The formal documentation and language standard will come as a result of those efforts, and the future Laye compilers (this one included, of course) will be built to that standard.
 Check back on each of these projects frequently to see how development is progressing.
 

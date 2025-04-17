@@ -1,5 +1,5 @@
-#ifndef MACROS_H_
-#define MACROS_H_
+#ifndef CHOIR_MACROS_H_
+#define CHOIR_MACROS_H_
 
 #define cast(T) (T)
 
@@ -9,12 +9,24 @@
         goto defer;         \
     } while (0)
 
-/// Initial capacity of a dynamic array
+/// Initial capacity of a dynamic array.
 #ifndef DA_INIT_CAP
 #    define DA_INIT_CAP 256
 #endif
 
-// Push an item to a dynamic array
+/// Declare the required fields of a dynamic array of the given element type.
+#define DA_DECLARE_INLINE(da_element_type) \
+    (da_element_type) * items;             \
+    isize capacity;                        \
+    isize count;
+
+/// Declare a dynamic array type with the given name and element type.
+#define DA_DECLARE(da_name, da_element_type) \
+    typedef struct da_name {                 \
+        DA_DECLARE_INLINE(da_element_type)   \
+    } da_name;
+
+// Push an item to a dynamic array.
 #define da_push(da, item)                                                                                  \
     do {                                                                                                   \
         if ((da)->count >= (da)->capacity) {                                                               \
@@ -27,7 +39,7 @@
 
 #define da_free(da) ch_dealloc((da)->allocator, (da)->items)
 
-// Push several items to a dynamic array
+// Push several items to a dynamic array.
 #define da_push_many(da, new_items, new_items_count)                                                       \
     do {                                                                                                   \
         if ((da)->count + (new_items_count) > (da)->capacity) {                                            \
@@ -44,4 +56,4 @@
         (da)->count += (new_items_count);                                                                  \
     } while (0)
 
-#endif // MACROS_H_
+#endif // CHOIR_MACROS_H_

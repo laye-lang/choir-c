@@ -7,9 +7,9 @@
 
 #define ODIR "out"
 
-#define LIBLAYE_STATIC_LIBRARY_FILE "liblaye"
+#define LIBCHOIR_STATIC_LIBRARY_FILE "libchoir"
 
-#define LAYE_EXECUTABLE_FILE  "laye"
+#define CHOIR_EXECUTABLE_FILE  "choir"
 #define LAYEC_EXECUTABLE_FILE "layec"
 #define CCLY_EXECUTABLE_FILE "ccly"
 
@@ -25,7 +25,7 @@ typedef struct {
     const char* object_file;
 } source_paths;
 
-static source_paths liblaye_files[] = {
+static source_paths libchoir_files[] = {
     {"lib/laye/eval.c", ODIR "/laye-eval.o"},
     {"lib/laye/token.c", ODIR "/laye-token.o"},
     {0},
@@ -41,8 +41,8 @@ static source_paths ccly_files[] = {
     {0},
 };
 
-static source_paths laye_files[] = {
-    {"src/laye.c", ODIR "/laye.o"},
+static source_paths choir_files[] = {
+    {"src/choir.c", ODIR "/choir.o"},
     {0},
 };
 
@@ -131,8 +131,8 @@ defer:;
 }
 
 static void clean(void) {
-    if (nob_file_exists("./laye")) remove("./laye");
-    if (nob_file_exists("./laye.exe")) remove("./laye.exe");
+    if (nob_file_exists("./choir")) remove("./choir");
+    if (nob_file_exists("./choir.exe")) remove("./choir.exe");
 
     if (nob_file_exists("./layec")) remove("./layec");
     if (nob_file_exists("./layec.exe")) remove("./layec.exe");
@@ -189,13 +189,13 @@ int main(int argc, char** argv) {
         source_root = nob_temp_sprintf("%s/..", source_root);
     }
 
-    Nob_File_Paths liblaye_object_paths = {0};
-    if (!build_object_files(source_root, liblaye_files, &liblaye_object_paths)) {
+    Nob_File_Paths libchoir_object_paths = {0};
+    if (!build_object_files(source_root, libchoir_files, &libchoir_object_paths)) {
         nob_return_defer(1);
     }
 
-    const char* libfile = ODIR "/" LIB_PREFIX LIBLAYE_STATIC_LIBRARY_FILE LIB_EXT;
-    if (!package_library(liblaye_object_paths, libfile)) {
+    const char* libfile = ODIR "/" LIB_PREFIX LIBCHOIR_STATIC_LIBRARY_FILE LIB_EXT;
+    if (!package_library(libchoir_object_paths, libfile)) {
         nob_return_defer(1);
     }
 
@@ -221,14 +221,14 @@ int main(int argc, char** argv) {
         nob_return_defer(1);
     }
 
-    Nob_File_Paths laye_input_paths = {0};
-    if (!build_object_files(source_root, laye_files, &laye_input_paths)) {
+    Nob_File_Paths choir_input_paths = {0};
+    if (!build_object_files(source_root, choir_files, &choir_input_paths)) {
         nob_return_defer(1);
     }
 
-    nob_da_append(&laye_input_paths, libfile);
-    const char* layefile = ODIR "/" LAYE_EXECUTABLE_FILE EXE_EXT;
-    if (!link_executable(laye_input_paths, layefile)) {
+    nob_da_append(&choir_input_paths, libfile);
+    const char* choirfile = ODIR "/" CHOIR_EXECUTABLE_FILE EXE_EXT;
+    if (!link_executable(choir_input_paths, choirfile)) {
         nob_return_defer(1);
     }
 
@@ -240,7 +240,7 @@ int main(int argc, char** argv) {
         nob_return_defer(1);
     }
 
-    if (!nob_copy_file(layefile, LAYE_EXECUTABLE_FILE EXE_EXT)) {
+    if (!nob_copy_file(choirfile, CHOIR_EXECUTABLE_FILE EXE_EXT)) {
         nob_return_defer(1);
     }
 

@@ -1,4 +1,4 @@
-#include <laye/laye.h>
+#include <choir/core.h>
 
 int main(int argc, char** argv) {
     return 0;
