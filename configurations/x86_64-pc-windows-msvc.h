@@ -11,7 +11,7 @@
 #define LD_MSVC
 
 #define LCONFIG 
-#define CFLAGS "/std:clatest", "/Wall -Wno-unused-parameter", "/WX", "/Zi" LCONFIG
+#define CFLAGS "/std:clatest", "/WX", "/Zi" LCONFIG
 #define LDFLAGS "/subsystem:console"
 
 #define EXE_EXT ".exe"
