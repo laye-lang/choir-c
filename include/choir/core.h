@@ -82,6 +82,7 @@ CHOIR_API const char* ch_token_kind_spelling_get(ch_token_kind kind);
 /// @brief Returns the keyword availability flags for this token kind if it's a keyword.
 /// Otherwise returns `CH_TKKEY_NOT_KW`.
 /// @ref ch_token_kind
+/// @ref ch_token_key
 CHOIR_API ch_token_key ch_token_kind_key_get(ch_token_kind kind);
 
 #if defined(__cplusplus)
