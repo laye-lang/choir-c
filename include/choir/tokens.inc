@@ -26,22 +26,22 @@
 /// Special tokens.
 ///===--------------------------------------===///
 
-CH_TOKEN(INVALID)          // not a token
-CH_TOKEN(END_OF_FILE)      // end of file
+CH_TOKEN(INVALID)         // not a token
+CH_TOKEN(END_OF_FILE)     // end of file
 CH_TOKEN(CODE_COMPLETION) // code completion marker
 
 ///===--------------------------------------===///
 /// Preprocessor tokens.
 ///===--------------------------------------===///
 
-CH_PP(NOT_KEYWORD)       // A preprocessor identifier, none of the defined keywords.
-CH_PP(END_OF_DIRECTIVE)  // End of preprocessing directive.
-CH_PP(NUMBER)            // A C preprocessor number.
-CH_PP(MACRO_PARAM)       // An identifier determined to be a macro parameter name.
+CH_PP(NOT_KEYWORD)      // A preprocessor identifier, none of the defined keywords.
+CH_PP(END_OF_DIRECTIVE) // End of preprocessing directive.
+CH_PP(NUMBER)           // A C preprocessor number.
+CH_PP(MACRO_PARAM)      // An identifier determined to be a macro parameter name.
 /// Laye special identifiers.
-CH_PP(LAYE_TOKEN_MACRO)  // A Laye identifier prefixed with '#', opts into token-based C macro expansions.
-CH_PP(LAYE_EXPR_MACRO)   // A Laye identifier prefixed with '@', opts into Laye's expression-based C function-like macro expansions.
-CH_PP(LAYE_NUMBER)       // A C preprocessor number, but with Laye number syntax.
+CH_PP(LAYE_TOKEN_MACRO) // A Laye identifier prefixed with '#', opts into token-based C macro expansions.
+CH_PP(LAYE_EXPR_MACRO)  // A Laye identifier prefixed with '@', opts into Laye's expression-based C function-like macro expansions.
+CH_PP(LAYE_NUMBER)      // A C preprocessor number, but with Laye number syntax.
 
 /// === C23 6.10.1 - Conditional inclusion.
 CH_PPKEYWORD(IF, "if")
@@ -111,18 +111,18 @@ CH_TOKEN(INTEGER_CONSTANT)
 CH_TOKEN(FLOATING_CONSTANT)
 
 /// === C23 6.4.4.4 - Character constants.
-CH_TOKEN(CHARACTER_CONSTANT)        //   'a'
-CH_TOKEN(WIDE_CHARACTER_CONSTANT)   //  L'a'
-CH_TOKEN(UTF8_CHARACTER_CONSTANT)   // u8'a'
-CH_TOKEN(UTF16_CHARACTER_CONSTANT)  //  u'a'
-CH_TOKEN(UTF32_CHARACTER_CONSTANT)  //  U'a'
+CH_TOKEN(CHARACTER_CONSTANT)       //   'a'
+CH_TOKEN(WIDE_CHARACTER_CONSTANT)  //  L'a'
+CH_TOKEN(UTF8_CHARACTER_CONSTANT)  // u8'a'
+CH_TOKEN(UTF16_CHARACTER_CONSTANT) //  u'a'
+CH_TOKEN(UTF32_CHARACTER_CONSTANT) //  U'a'
 
 /// === C23 6.4.5 - String literals.
-CH_TOKEN(STRING_LITERAL)        //   "foo"
-CH_TOKEN(WIDE_STRING_LITERAL)   //  L"foo"
-CH_TOKEN(UTF8_STRING_LITERAL)   // u8"foo"
-CH_TOKEN(UTF16_STRING_LITERAL)  //  u"foo"
-CH_TOKEN(UTF32_STRING_LITERAL)  //  U"foo"
+CH_TOKEN(STRING_LITERAL)       //   "foo"
+CH_TOKEN(WIDE_STRING_LITERAL)  //  L"foo"
+CH_TOKEN(UTF8_STRING_LITERAL)  // u8"foo"
+CH_TOKEN(UTF16_STRING_LITERAL) //  u"foo"
+CH_TOKEN(UTF32_STRING_LITERAL) //  U"foo"
 
 /// === C23 6.4.7 - Header names.
 CH_TOKEN(HEADER_NAME)
@@ -276,7 +276,6 @@ CH_KEYWORD(__THREAD, "__thread", CH_TKKEY_GNU)
 /// Clang extensions.
 /// Microsoft extensions.
 /// Microsoft compatibility mode.
-
 
 /// === Laye - (Non-C) Keywords.
 CH_KEYWORD(ALIAS, "alias", CH_TKKEY_LAYE)
