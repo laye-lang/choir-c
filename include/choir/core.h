@@ -73,6 +73,11 @@ typedef enum ch_token_kind {
 /// @ref ch_token_kind
 CHOIR_API const char* ch_token_kind_name_get(ch_token_kind kind);
 
+/// @brief Returns the spelling of this token kind if it is represented by a single spelling or a canonical spelling from among aliases.
+/// Otherwise returns NULL.
+/// @ref ch_token_kind
+CHOIR_API const char* ch_token_kind_spelling_get(ch_token_kind kind);
+
 #if defined(__cplusplus)
 }
 #endif // defined(__cplusplus)

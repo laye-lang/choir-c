@@ -1,6 +1,10 @@
 #ifndef CHOIR_MACROS_H_
 #define CHOIR_MACROS_H_
 
+#if __STDC_VERSION__ < 202311L
+#    define nullptr NULL
+#endif
+
 #define cast(T) (T)
 
 #define return_defer(value) \
