@@ -1,6 +1,6 @@
 #include <choir/core.h>
 
-CHOIR_API const char* ch_token_kind_name_get(ch_token_kind kind) {
+CHOIR_API const char* ch_token_kind_get_name(ch_token_kind kind) {
     switch (kind) {
         default: return "[unknown Laye source token kind]";
 #define CH_TOKEN(id) \
@@ -9,7 +9,7 @@ CHOIR_API const char* ch_token_kind_name_get(ch_token_kind kind) {
     }
 }
 
-CHOIR_API const char* ch_token_kind_spelling_get(ch_token_kind kind) {
+CHOIR_API const char* ch_token_kind_get_spelling(ch_token_kind kind) {
     switch (kind) {
         default: return NULL;
 #define CH_TOKEN(id) \
@@ -26,7 +26,7 @@ CHOIR_API const char* ch_token_kind_spelling_get(ch_token_kind kind) {
     }
 }
 
-CHOIR_API ch_token_key ch_token_kind_key_get(ch_token_kind kind) {
+CHOIR_API ch_token_key ch_token_kind_get_key(ch_token_kind kind) {
     switch (kind) {
         default: return CH_TKKEY_NOT_KW;
 #define CH_TOKEN(id) \

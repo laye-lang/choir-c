@@ -72,18 +72,18 @@ typedef enum ch_token_kind {
 
 /// @brief Returns the name of the enum constant associated with this token kind.
 /// @ref ch_token_kind
-CHOIR_API const char* ch_token_kind_name_get(ch_token_kind kind);
+CHOIR_API const char* ch_token_kind_get_name(ch_token_kind kind);
 
 /// @brief Returns the spelling of this token kind if it is represented by a single spelling or a canonical spelling from among aliases.
 /// Otherwise returns `NULL`.
 /// @ref ch_token_kind
-CHOIR_API const char* ch_token_kind_spelling_get(ch_token_kind kind);
+CHOIR_API const char* ch_token_kind_get_spelling(ch_token_kind kind);
 
 /// @brief Returns the keyword availability flags for this token kind if it's a keyword.
 /// Otherwise returns `CH_TKKEY_NOT_KW`.
 /// @ref ch_token_kind
 /// @ref ch_token_key
-CHOIR_API ch_token_key ch_token_kind_key_get(ch_token_kind kind);
+CHOIR_API ch_token_key ch_token_kind_get_key(ch_token_kind kind);
 
 #if defined(__cplusplus)
 }
