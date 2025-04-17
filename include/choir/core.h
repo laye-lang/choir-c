@@ -44,7 +44,7 @@ typedef enum ch_token_key {
     CH_TKKEY_BOOL = 1 << 10,
     CH_TKKEY_WCHAR = 1 << 11,
 
-    CH_TKKEY_MAX = CH_TKKEY_LAYE,
+    CH_TKKEY_MAX = CH_TKKEY_WCHAR,
     CH_TKKEY_ALL = (CH_TKKEY_MAX) | (CH_TKKEY_MAX - 1),
 } ch_token_key;
 
