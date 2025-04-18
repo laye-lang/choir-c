@@ -28,7 +28,6 @@
 
 CH_TOKEN(INVALID)         // not a token
 CH_TOKEN(END_OF_FILE)     // end of file
-CH_TOKEN(CODE_COMPLETION) // code completion marker
 
 ///===--------------------------------------===///
 /// Preprocessor tokens.
@@ -202,7 +201,6 @@ CH_PUNCT(QUESTION_QUESTION_EQUAL, "??=")
 ///   CH_KWFLAG_MS         - This is a keyword if Microsoft extensions are enabled.
 ///   CH_KWFLAG_MS_COMPAT  - This is a keyword if Microsoft compatibility mode is enabled.
 ///   CH_KWFLAG_CLANG      - This is a keyword if Clang extensions are enabled.
-///   CH_KWFLAG_BORLAND    - This is a keyword if Borland extensions are enabled.
 ///   CH_KWFLAG_CHOIR      - This is a keyword if Choir extensions are enabled.
 ///
 ///   CH_KWFLAG_BOOL       - This is a keyword if 'bool' is a built-in type in C.

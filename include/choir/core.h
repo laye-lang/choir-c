@@ -89,12 +89,10 @@ typedef enum ch_token_key {
     CH_TKKEY_MS_COMPAT = 1 << 6,
     /// @brief Indicates a keyword is available if Clang extensions are enabled.
     CH_TKKEY_CLANG = 1 << 7,
-    /// @brief Indicates a keyword is available if Borland extensions are enabled.
-    CH_TKKEY_BORLAND = 1 << 8,
     /// @brief Indicates a keyword is available if Choir extensions are enabled.
-    CH_TKKEY_CHOIR = 1 << 9,
+    CH_TKKEY_CHOIR = 1 << 8,
     /// @brief Indicates a keyword is available if 'bool' is a built-in type.
-    CH_TKKEY_BOOL = 1 << 10,
+    CH_TKKEY_BOOL = 1 << 9,
 
     /// @brief The maximum key flag value.
     CH_TKKEY_MAX = CH_TKKEY_BOOL,
@@ -123,7 +121,7 @@ typedef struct ch_token {
     bool has_whitespace_before : 1;
     /// @brief True if this token should not be considered for macro expansion.
     bool expansion_disabled : 1;
-    
+
     /// @brief The source range of this token.
     ch_range range;
 
@@ -142,6 +140,11 @@ typedef struct ch_token {
 } ch_token;
 
 DA_DECLARE(ch_tokens, ch_token);
+
+typedef struct ch_lexer ch_lexer;
+typedef struct ch_preprocessor ch_preprocessor;
+typedef struct ch_parser ch_parser;
+typedef struct ch_sema ch_sema;
 
 ///===--------------------------------------===///
 /// Strings API.
@@ -176,6 +179,14 @@ CHOIR_API ch_token_key ch_token_kind_get_key(ch_token_kind kind);
 
 ///===--------------------------------------===///
 /// Preprocessor API.
+///===--------------------------------------===///
+
+///===--------------------------------------===///
+/// Parser API.
+///===--------------------------------------===///
+
+///===--------------------------------------===///
+/// Sema API.
 ///===--------------------------------------===///
 
 #if defined(__cplusplus)

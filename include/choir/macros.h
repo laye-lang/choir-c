@@ -27,7 +27,7 @@
 /// Declare a dynamic array type with the given name and element type.
 #define DA_DECLARE(da_name, da_element_type) \
     typedef struct da_name {                 \
-        DA_DECLARE_INLINE(da_element_type)   \
+        DA_DECLARE_INLINE(da_element_type);  \
     } da_name
 
 // Push an item to a dynamic array.

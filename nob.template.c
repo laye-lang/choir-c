@@ -26,8 +26,7 @@ typedef struct {
 } source_paths;
 
 static source_paths libchoir_files[] = {
-    {"lib/laye/eval.c", ODIR "/laye-eval.o"},
-    {"lib/laye/token.c", ODIR "/laye-token.o"},
+    {"lib/choir/token.c", ODIR "/laye-token.o"},
     {0},
 };
 
