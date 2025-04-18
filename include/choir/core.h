@@ -104,7 +104,7 @@ typedef enum ch_token_key {
 /// @ref ch_token
 typedef enum ch_token_kind {
 #define CH_TOKEN(id) CH_TK_##id,
-#include "tokens.inc"
+#include "tokens.h"
     CH_TOKEN_KIND_COUNT,
 } ch_token_kind;
 
