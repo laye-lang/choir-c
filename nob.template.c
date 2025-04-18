@@ -45,11 +45,13 @@ static source_paths choir_files[] = {
     {0},
 };
 
+static Nob_File_Paths all_header_files = {0};
+
 static bool compile_object(const char* source_path, const char* object_path, const char* source_root) {
     bool result = true;
 
     Nob_Cmd cmd = {0};
-    if (0 == nob_needs_rebuild1(object_path, source_path)) {
+    if (0 == nob_needs_rebuild1(object_path, source_path) && 0 == nob_needs_rebuild(object_path, all_header_files.items, all_header_files.count)) {
         nob_return_defer(true);
     }
 
@@ -164,8 +166,47 @@ defer:
     return result;
 }
 
+// The implementation idea is stolen from https://github.com/zhiayang/nabs
+static void _go_rebuild_urself(const char *source_path, int argc, char **argv)
+{
+    const char *binary_path = nob_shift(argv, argc);
+#ifdef _WIN32
+    // On Windows executables almost always invoked without extension, so
+    // it's ./nob, not ./nob.exe. For renaming the extension is a must.
+    if (!nob_sv_end_with(nob_sv_from_cstr(binary_path), ".exe")) {
+        binary_path = nob_temp_sprintf("%s.exe", binary_path);
+    }
+#endif
+
+    Nob_File_Paths file_paths = {0};
+    nob_da_append(&file_paths, source_path);
+    nob_da_append(&file_paths, "config.h");
+
+    int rebuild_is_needed = nob_needs_rebuild(binary_path, file_paths.items, file_paths.count);
+    nob_da_free(file_paths);
+
+    if (rebuild_is_needed < 0) exit(1); // error
+    if (!rebuild_is_needed) return;     // no rebuild is needed
+
+    Nob_Cmd cmd = {0};
+
+    const char *old_binary_path = nob_temp_sprintf("%s.old", binary_path);
+
+    if (!nob_rename(binary_path, old_binary_path)) exit(1);
+    nob_cmd_append(&cmd, NOB_REBUILD_URSELF(binary_path, source_path));
+    if (!nob_cmd_run_sync_and_reset(&cmd)) {
+        nob_rename(old_binary_path, binary_path);
+        exit(1);
+    }
+
+    nob_cmd_append(&cmd, binary_path);
+    nob_da_append_many(&cmd, argv, argc);
+    if (!nob_cmd_run_sync_and_reset(&cmd)) exit(1);
+    exit(0);
+}
+
 int main(int argc, char** argv) {
-    NOB_GO_REBUILD_URSELF(argc, argv);
+    _go_rebuild_urself(__FILE__, argc, argv);
 
     bool result = 0;
 
@@ -187,6 +228,14 @@ int main(int argc, char** argv) {
     while (!nob_file_exists(nob_temp_sprintf("%s/include", source_root))) {
         source_root = nob_temp_sprintf("%s/..", source_root);
     }
+
+    Nob_File_Paths include_file_paths = {0};
+    if (!nob_read_entire_dir(nob_temp_sprintf("%s/include", source_root), &include_file_paths)) {
+        nob_return_defer(1);
+    }
+
+    nob_da_append_many(&all_header_files, include_file_paths.items + 2, include_file_paths.count - 2);
+    nob_da_free(include_file_paths);
 
     Nob_File_Paths libchoir_object_paths = {0};
     if (!build_object_files(source_root, libchoir_files, &libchoir_object_paths)) {
