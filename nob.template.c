@@ -9,7 +9,7 @@
 
 #define LIBCHOIR_STATIC_LIBRARY_FILE "libchoir"
 
-#define CHOIR_EXECUTABLE_FILE  "choir"
+#define CHOIR_EXECUTABLE_FILE "choir"
 #define LAYEC_EXECUTABLE_FILE "layec"
 #define CCLY_EXECUTABLE_FILE "ccly"
 
@@ -230,11 +230,14 @@ int main(int argc, char** argv) {
     }
 
     Nob_File_Paths include_file_paths = {0};
-    if (!nob_read_entire_dir(nob_temp_sprintf("%s/include", source_root), &include_file_paths)) {
+    if (!nob_read_entire_dir(nob_temp_sprintf("%s/include/choir", source_root), &include_file_paths)) {
         nob_return_defer(1);
     }
 
-    nob_da_append_many(&all_header_files, include_file_paths.items + 2, include_file_paths.count - 2);
+    for (size_t i = 2; i < include_file_paths.count; i++) {
+        nob_da_append(&all_header_files, nob_temp_sprintf("%s/include/choir/%s", source_root, include_file_paths.items[i]));
+    }
+    
     nob_da_free(include_file_paths);
 
     Nob_File_Paths libchoir_object_paths = {0};
