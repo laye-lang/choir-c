@@ -237,7 +237,7 @@ int main(int argc, char** argv) {
     for (size_t i = 2; i < include_file_paths.count; i++) {
         nob_da_append(&all_header_files, nob_temp_sprintf("%s/include/choir/%s", source_root, include_file_paths.items[i]));
     }
-    
+
     nob_da_free(include_file_paths);
 
     Nob_File_Paths libchoir_object_paths = {0};
@@ -283,16 +283,22 @@ int main(int argc, char** argv) {
         nob_return_defer(1);
     }
 
-    if (!nob_copy_file(layecfile, LAYEC_EXECUTABLE_FILE EXE_EXT)) {
-        nob_return_defer(1);
+    if (1 == nob_needs_rebuild1(LAYEC_EXECUTABLE_FILE EXE_EXT, layecfile)) {
+        if (!nob_copy_file(layecfile, LAYEC_EXECUTABLE_FILE EXE_EXT)) {
+            nob_return_defer(1);
+        }
     }
 
-    if (!nob_copy_file(cclyfile, CCLY_EXECUTABLE_FILE EXE_EXT)) {
-        nob_return_defer(1);
+    if (1 == nob_needs_rebuild1(CCLY_EXECUTABLE_FILE EXE_EXT, cclyfile)) {
+        if (!nob_copy_file(cclyfile, CCLY_EXECUTABLE_FILE EXE_EXT)) {
+            nob_return_defer(1);
+        }
     }
 
-    if (!nob_copy_file(choirfile, CHOIR_EXECUTABLE_FILE EXE_EXT)) {
-        nob_return_defer(1);
+    if (1 == nob_needs_rebuild1(CHOIR_EXECUTABLE_FILE EXE_EXT, choirfile)) {
+        if (!nob_copy_file(choirfile, CHOIR_EXECUTABLE_FILE EXE_EXT)) {
+            nob_return_defer(1);
+        }
     }
 
 defer:;
