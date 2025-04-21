@@ -1,7 +1,6 @@
-# Choir Compiler Toolchain in C
+# Choir Compiler Toolchain
 
-The Choir-C project aims to implement "[standard](https://github.com/laye-lang/laye-docs)" Laye compiler tooling for bootstrapping purposes.
-It is not desirable to end up in a situation where only a self hosted compiler is available, so Choir-C is developed and maintained alongside the "official" [self-hosted implementation](https://github.com/laye-lang/choir).
+The Choir project aims to implement "[standard](https://github.com/laye-lang/laye-docs)" Laye compiler tooling in a way that can easily be bootstrapped on most systems.
 
 These projects are very work-in-progress as the [temporary bootstrap compiler](https://github.com/laye-lang/layec-dotnet) is under rapid development to experiment with the language and naturally discover what Laye wants to be.
 The formal documentation and language standard will come as a result of those efforts, and the future Laye compilers (this one included, of course) will be built to that standard.
