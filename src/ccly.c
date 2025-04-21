@@ -4,7 +4,7 @@
 
 int main(int argc, char** argv) {
     for (isize_t i = 0; i < CH_TOKEN_KIND_COUNT; i++) {
-        ch_token_kind kind = ch_cast(ch_token_kind) i;
+        ch_token_kind kind = k_cast(ch_token_kind) i;
 
         const char* name_spelling = ch_token_kind_get_name(kind);
         fprintf(stderr, "%s", name_spelling);

@@ -26,16 +26,19 @@ typedef struct {
 } source_paths;
 
 static source_paths libchoir_files[] = {
+    {"lib/kos/arena.c", ODIR "/kos-arena.o"},
     {"lib/choir/token.c", ODIR "/laye-token.o"},
     {0},
 };
 
 static source_paths layec_files[] = {
+    {"lib/kos/arena.c", ODIR "/kos-arena.o"},
     {"src/layec.c", ODIR "/layec.o"},
     {0},
 };
 
 static source_paths ccly_files[] = {
+    {"lib/kos/arena.c", ODIR "/kos-arena.o"},
     {"src/ccly.c", ODIR "/ccly.o"},
     {0},
 };
@@ -236,6 +239,15 @@ int main(int argc, char** argv) {
 
     for (size_t i = 2; i < include_file_paths.count; i++) {
         nob_da_append(&all_header_files, nob_temp_sprintf("%s/include/choir/%s", source_root, include_file_paths.items[i]));
+    }
+    
+    include_file_paths.count = 0;
+    if (!nob_read_entire_dir(nob_temp_sprintf("%s/include/kos", source_root), &include_file_paths)) {
+        nob_return_defer(1);
+    }
+
+    for (size_t i = 2; i < include_file_paths.count; i++) {
+        nob_da_append(&all_header_files, nob_temp_sprintf("%s/include/kos/%s", source_root, include_file_paths.items[i]));
     }
 
     nob_da_free(include_file_paths);
