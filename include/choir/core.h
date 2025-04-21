@@ -18,31 +18,17 @@ extern "C" {
 /// Data types.
 ///===--------------------------------------===///
 
-typedef int8_t int8;
-typedef int16_t int16;
-typedef int32_t int32;
-typedef int64_t int64;
-
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
-
-typedef float float32;
-typedef double float64;
-
-typedef size_t usize;
-typedef ptrdiff_t isize;
+typedef ptrdiff_t isize_t;
 
 /// @brief An immutable view into underlying, non-owned string data.
 typedef struct ch_sting_view {
     const char* data;
-    isize count;
+    isize_t count;
 } ch_string_view;
 
 /// @brief A mutable, owning string builder.
 typedef struct ch_string {
-    DA_DECLARE_INLINE(char);
+    CH_DA_DECLARE_INLINE(char);
 } ch_string;
 
 /// @brief Source text from any language or input source.
@@ -57,7 +43,7 @@ typedef struct ch_source {
 } ch_source;
 
 /// @brief A 0-based byte location within the text of a source.
-typedef isize ch_location;
+typedef isize_t ch_location;
 
 /// @brief A 0-based byte range within the text of the referenced source.
 /// The byte length of this range is given by 'end' - 'begin'.
@@ -129,9 +115,9 @@ typedef struct ch_token {
         /// @brief The textual value of this token for identifiers, preprocessing numbers and keywords.
         ch_string_view text_value;
         /// @brief The value of this character constant.
-        int32 character_constant;
+        int32_t character_constant;
         /// @brief The value of this integer constant.
-        int64 integer_constant;
+        int64_t integer_constant;
         /// @brief The value of this floating constant.
         double floating_constant;
         /// @brief The value of this string literal.
@@ -139,7 +125,7 @@ typedef struct ch_token {
     };
 } ch_token;
 
-DA_DECLARE(ch_tokens, ch_token);
+CH_DA_DECLARE(ch_tokens, ch_token);
 
 typedef struct ch_lexer ch_lexer;
 typedef struct ch_preprocessor ch_preprocessor;
