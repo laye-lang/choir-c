@@ -11,7 +11,7 @@
 
 #define CHOIR_EXECUTABLE_FILE "choir"
 #define LAYEC_EXECUTABLE_FILE "layec"
-#define CCLY_EXECUTABLE_FILE "ccly"
+#define CCLY_EXECUTABLE_FILE  "ccly"
 
 #if defined(NOBCONFIG_MISSING)
 #    error No nob configuration has been specified. Please copy the relevant config file from the config directory for your platform and toolchain into the appropriate 'nob_config.<PLATFORM>.h' file.
@@ -27,18 +27,17 @@ typedef struct {
 
 static source_paths libchoir_files[] = {
     {"lib/kos/arena.c", ODIR "/kos-arena.o"},
+    {"lib/kos/string.c", ODIR "/kos-string.o"},
     {"lib/choir/token.c", ODIR "/laye-token.o"},
     {0},
 };
 
 static source_paths layec_files[] = {
-    {"lib/kos/arena.c", ODIR "/kos-arena.o"},
     {"src/layec.c", ODIR "/layec.o"},
     {0},
 };
 
 static source_paths ccly_files[] = {
-    {"lib/kos/arena.c", ODIR "/kos-arena.o"},
     {"src/ccly.c", ODIR "/ccly.o"},
     {0},
 };
@@ -140,7 +139,7 @@ static void clean(void) {
 
     if (nob_file_exists("./layec")) remove("./layec");
     if (nob_file_exists("./layec.exe")) remove("./layec.exe");
-    
+
     if (nob_file_exists("./ccly")) remove("./ccly");
     if (nob_file_exists("./ccly.exe")) remove("./ccly.exe");
 
@@ -170,9 +169,8 @@ defer:
 }
 
 // The implementation idea is stolen from https://github.com/zhiayang/nabs
-static void _go_rebuild_urself(const char *source_path, int argc, char **argv)
-{
-    const char *binary_path = nob_shift(argv, argc);
+static void _go_rebuild_urself(const char* source_path, int argc, char** argv) {
+    const char* binary_path = nob_shift(argv, argc);
 #ifdef _WIN32
     // On Windows executables almost always invoked without extension, so
     // it's ./nob, not ./nob.exe. For renaming the extension is a must.
@@ -193,7 +191,7 @@ static void _go_rebuild_urself(const char *source_path, int argc, char **argv)
 
     Nob_Cmd cmd = {0};
 
-    const char *old_binary_path = nob_temp_sprintf("%s.old", binary_path);
+    const char* old_binary_path = nob_temp_sprintf("%s.old", binary_path);
 
     if (!nob_rename(binary_path, old_binary_path)) exit(1);
     nob_cmd_append(&cmd, NOB_REBUILD_URSELF(binary_path, source_path));
@@ -240,7 +238,7 @@ int main(int argc, char** argv) {
     for (size_t i = 2; i < include_file_paths.count; i++) {
         nob_da_append(&all_header_files, nob_temp_sprintf("%s/include/choir/%s", source_root, include_file_paths.items[i]));
     }
-    
+
     include_file_paths.count = 0;
     if (!nob_read_entire_dir(nob_temp_sprintf("%s/include/kos", source_root), &include_file_paths)) {
         nob_return_defer(1);

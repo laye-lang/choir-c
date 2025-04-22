@@ -1,21 +1,21 @@
 #ifndef CHOIR_CORE_H_
-#define CHOIR_CORE_H_
+#    define CHOIR_CORE_H_
 
-#if defined(__cplusplus)
+#    if defined(__cplusplus)
 extern "C" {
-#endif // defined(__cplusplus)
+#    endif // defined(__cplusplus)
 
-#include <kos/kos.h>
+#    include <kos/kos.h>
 
-#if defined(CHOIR_BUILD_DLL)
-#    if defined(CHOIR_LIB)
-#        define CHOIR_API __declspec(dllexport)
-#    else
-#        define CHOIR_API __declspec(dllimport)
-#    endif
-#else // !CHOIR_BUILD_DLL
-#    define CHOIR_API extern
-#endif // CHOIR_BUILD_DLL
+#    if defined(CHOIR_BUILD_DLL)
+#        if defined(CHOIR_LIB)
+#            define CHOIR_API __declspec(dllexport)
+#        else
+#            define CHOIR_API __declspec(dllimport)
+#        endif
+#    else // !CHOIR_BUILD_DLL
+#        define CHOIR_API extern
+#    endif // CHOIR_BUILD_DLL
 
 ///===--------------------------------------===///
 /// Data types.
@@ -24,12 +24,12 @@ extern "C" {
 /// @brief The maximal alignment Choir, and the @c ch_align_t type, supports.
 /// This value is equal to 2 to the 14th power (1 << 14, or 16384) because it is the largest power of two representible with a signed 16-bit twos-complement integer.
 /// @ref ch_align_for_bytes
-#define CH_ALIGN_MAX (1 << 14)
+#    define CH_ALIGN_MAX (1 << 14)
 
 /// @brief The minimal alignment Choir supports.
 /// Nothing can be less aligned than a single byte.
 /// @ref ch_align_for_bytes
-#define CH_ALIGN_MIN 1
+#    define CH_ALIGN_MIN 1
 
 /// @brief Represents the byte size of a piece of data.
 /// @ref ch_align_padding
@@ -103,14 +103,31 @@ typedef enum ch_token_key {
 /// @brief Describes the kind of a source text token.
 /// @ref ch_token
 typedef enum ch_token_kind {
-#define CH_TOKEN(id) CH_TK_##id,
-#include "tokens.h"
+#    define CH_TOKEN(id) CH_TK_##id,
+#    include "tokens.h"
     CH_TOKEN_KIND_COUNT,
 } ch_token_kind;
 
 /// @brief Token information for all variants of C and Laye.
 /// @ref ch_token_kind
-typedef struct ch_token {
+typedef struct ch_token ch_token;
+
+/// @brief A dynamic array of tokens.
+typedef struct ch_tokens {
+    K_DA_DECLARE_INLINE(ch_token);
+} ch_tokens;
+
+typedef struct ch_translation_unit  ch_translation_unit;
+
+typedef struct ch_lexer  ch_lexer;
+
+typedef struct ch_preprocessor ch_preprocessor;
+
+typedef struct ch_parser ch_parser;
+
+typedef struct ch_sema ch_sema;
+
+struct ch_token {
     /// @brief The kind of this token.
     /// Also used as a tag to select active data from the contained union, if applicable.
     ch_token_kind kind;
@@ -137,20 +154,7 @@ typedef struct ch_token {
         /// @brief The value of this string literal.
         k_string_view string_literal;
     };
-} ch_token;
-
-/// @brief A dynamic array of tokens.
-typedef struct ch_tokens {
-    K_DA_DECLARE_INLINE(ch_token);
-} ch_tokens;
-
-typedef struct ch_lexer {
-    int dummy;
-} ch_lexer;
-
-typedef struct ch_preprocessor ch_preprocessor;
-typedef struct ch_parser ch_parser;
-typedef struct ch_sema ch_sema;
+};
 
 ///===--------------------------------------===///
 /// Size & Alignment API.
@@ -204,8 +208,8 @@ CHOIR_API ch_token_key ch_token_kind_get_key(ch_token_kind kind);
 /// Sema API.
 ///===--------------------------------------===///
 
-#if defined(__cplusplus)
+#    if defined(__cplusplus)
 }
-#endif // defined(__cplusplus)
+#    endif // defined(__cplusplus)
 
 #endif // CHOIR_CORE_H_

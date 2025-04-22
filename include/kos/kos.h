@@ -14,6 +14,7 @@ extern "C" {
 #if __STDC_VERSION__ < 202311L
 #    include <stdalign.h>
 #endif
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -64,37 +65,66 @@ extern "C" {
 
 /// Declare the required fields of a dynamic array of the given element type.
 #define K_DA_DECLARE_INLINE(ElementType) \
+    k_arena* arena;                      \
     ElementType* data;                   \
     isize_t capacity;                    \
     isize_t count
 
 // Push an item to a dynamic array.
-#define k_da_push(DynArr, Item)                                                                                   \
-    do {                                                                                                          \
-        if ((DynArr)->count >= (DynArr)->capacity) {                                                              \
-            (DynArr)->capacity = (DynArr)->capacity == 0 ? K_DA_INIT_CAP : (DynArr)->capacity * 2;                \
-            (DynArr)->data = realloc((DynArr)->data, k_cast(size_t)(DynArr)->capacity * sizeof(*(DynArr)->data)); \
-            assert((DynArr)->data != NULL && "Buy more RAM lol");                                                 \
-        }                                                                                                         \
-        (DynArr)->data[(DynArr)->count++] = (Item);                                                               \
+#define k_da_push(DynArr, Item)                                                                    \
+    do {                                                                                           \
+        if ((DynArr)->count >= (DynArr)->capacity) {                                               \
+            (DynArr)->capacity = (DynArr)->capacity == 0 ? K_DA_INIT_CAP : (DynArr)->capacity * 2; \
+            size_t new_size = k_cast(size_t)(DynArr)->capacity * sizeof(*(DynArr)->data);          \
+            if ((DynArr)->arena == nullptr) {                                                      \
+                (DynArr)->data = realloc((DynArr)->data, new_size);                                \
+                memset((DynArr)->data + (DynArr)->count, 0, (DynArr)->capacity - (DynArr)->count); \
+            } else {                                                                               \
+                void* old_data = (DynArr)->data;                                                   \
+                (DynArr)->data = k_arena_alloc((DynArr)->arena, new_size);                         \
+                memcpy((DynArr)->data, old_data, k_cast(size_t)(DynArr)->count);                   \
+            }                                                                                      \
+            assert((DynArr)->data != nullptr && "Buy more RAM lol");                               \
+        }                                                                                          \
+        (DynArr)->data[(DynArr)->count++] = (Item);                                                \
     } while (0)
 
-#define k_da_free(DynArr) \
-    do { free((DynArr)->data); } while (0)
+#define k_da_free(DynArr)                 \
+    do {                                  \
+        if ((DynArr)->arena == nullptr) { \
+            free((DynArr)->data);         \
+            (DynArr)->data = nullptr;     \
+            (DynArr)->capacity = 0;       \
+        }                                 \
+        (DynArr)->count = 0;              \
+    } while (0)
+
+#define k_da_ensure_capacity(DynArr, MinCapacity)                                                  \
+    do {                                                                                           \
+        if ((DynArr)->capacity < (MinCapacity)) {                                                  \
+            if ((DynArr)->capacity == 0) {                                                         \
+                (DynArr)->capacity = K_DA_INIT_CAP;                                                \
+            }                                                                                      \
+            while ((MinCapacity) > (DynArr)->capacity) {                                           \
+                (DynArr)->capacity *= 2;                                                           \
+            }                                                                                      \
+            size_t new_size = k_cast(size_t)(DynArr)->capacity * sizeof(*(DynArr)->data);          \
+            if ((DynArr)->arena == nullptr) {                                                      \
+                (DynArr)->data = realloc((DynArr)->data, new_size);                                \
+                memset((DynArr)->data + (DynArr)->count, 0, (DynArr)->capacity - (DynArr)->count); \
+            } else {                                                                               \
+                void* old_data = (DynArr)->data;                                                   \
+                (DynArr)->data = k_arena_alloc((DynArr)->arena, new_size);                         \
+                memcpy((DynArr)->data, old_data, k_cast(size_t)(DynArr)->count);                   \
+            }                                                                                      \
+            assert((DynArr)->data != NULL && "Buy more RAM lol");                                  \
+        }                                                                                          \
+    } while (0)
 
 // Push several items to a dynamic array.
 #define k_da_push_many(DynArr, NewItems, NewItemsCount)                                                                \
     do {                                                                                                               \
-        if ((DynArr)->count + (NewItemsCount) > (DynArr)->capacity) {                                                  \
-            if ((DynArr)->capacity == 0) {                                                                             \
-                (DynArr)->capacity = K_DA_INIT_CAP;                                                                    \
-            }                                                                                                          \
-            while ((DynArr)->count + (NewItemsCount) > (DynArr)->capacity) {                                           \
-                (DynArr)->capacity *= 2;                                                                               \
-            }                                                                                                          \
-            (DynArr)->data = realloc((DynArr)->data, k_cast(size_t)(DynArr)->capacity * sizeof(*(DynArr)->data));      \
-            assert((DynArr)->data != NULL && "Buy more RAM lol");                                                      \
-        }                                                                                                              \
+        k_da_ensure_capacity((DynArr), (DynArr)->count + (NewItemsCount));                                             \
         memcpy((DynArr)->data + (DynArr)->count, (NewItems), k_cast(size_t)(NewItemsCount) * sizeof(*(DynArr)->data)); \
         (DynArr)->count += (NewItemsCount);                                                                            \
     } while (0)
@@ -119,9 +149,10 @@ typedef struct k_arena_block {
 } k_arena_block;
 
 /// @brief A memory arena for controling memory scopes and lifetimes.
-typedef struct k_arena {
+typedef struct k_arena k_arena;
+struct k_arena {
     K_DA_DECLARE_INLINE(k_arena_block);
-} k_arena;
+};
 
 /// @brief An immutable view into underlying, non-owned string data.
 typedef struct k_string_view {
@@ -146,13 +177,20 @@ void k_arena_init(k_arena* arena);
 /// @param arena The arena to de-initialize.
 void k_arena_deinit(k_arena* arena);
 
-/// @brief Allocate 'size' number of bytes in this arena.
+/// @brief Allocate @c size number of bytes in this arena.
 /// The memory will be zeroed and aligned to K_ARENA_ALIGN bytes.
 void* k_arena_alloc(k_arena* arena, size_t size);
 
 ///===--------------------------------------===///
 /// Strings API.
 ///===--------------------------------------===///
+
+k_string_view k_sv(const char* data, isize_t count);
+k_string_view k_sv_from_cstr(const char* cstr);
+k_string_view k_sv_slice(k_string_view sv, isize_t offset, isize_t count);
+
+void k_sprintf(k_string* s, const char* format, ...);
+void k_vsprintf(k_string* s, const char* format, va_list v);
 
 #if defined(__cplusplus)
 }
