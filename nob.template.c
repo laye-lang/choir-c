@@ -28,7 +28,11 @@ typedef struct {
 static source_paths libchoir_files[] = {
     {"lib/kos/arena.c", ODIR "/kos-arena.o"},
     {"lib/kos/string.c", ODIR "/kos-string.o"},
-    {"lib/choir/token.c", ODIR "/laye-token.o"},
+
+    {"lib/choir/size_align.c", ODIR "/choir-size_align.o"},
+
+    {"lib/laye/token.c", ODIR "/laye-token.o"},
+    
     {0},
 };
 
