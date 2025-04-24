@@ -34,6 +34,7 @@ static source_paths libchoir_files[] = {
     {"lib/choir/context.c", ODIR "/choir-context.o"},
     {"lib/choir/size_align.c", ODIR "/choir-size_align.o"},
 
+    {"lib/laye/diag.c", ODIR "/laye-diag.o"},
     {"lib/laye/lex.c", ODIR "/laye-lex.o"},
     {"lib/laye/pp.core.c", ODIR "/laye-pp-core.o"},
     {"lib/laye/token.c", ODIR "/laye-token.o"},

@@ -122,7 +122,7 @@ struct ly_token {
     /// @brief True if this token is the first on its line, preceded only by whitespace or delimited comments.
     bool at_start_of_line : 1;
     /// @brief True if this token has any whitespace before it, including line breaks and comments.
-    bool has_whitespace_before : 1;
+    bool has_white_space_before : 1;
     /// @brief True if this token should not be considered for macro expansion.
     bool expansion_disabled : 1;
 
@@ -155,6 +155,7 @@ struct ly_lexer {
     int64_t current_line_number;
 
     ly_lexer_mode mode;
+    bool is_at_start_of_line;
 };
 
 struct ly_preprocessor {
@@ -184,9 +185,30 @@ CHOIR_API ly_token_key ly_token_kind_get_key(ly_token_kind kind);
 /// Lexer API.
 ///===--------------------------------------===///
 
+/// @brief Ensure the given lexer is properly initialized, i.e. ready to be read from immediately after this call returns.
+/// This will zero most of the lexer's memory, initialize the appropriate fields given as parameters, and default some internal state to expected values.
+/// @param lexer The lexer to initialize.
+/// @param context The compilation context to use with the lexer.
+/// @param source The source to read with the lexer.
+/// @param mode The initial mode to start the lexer in.
 CHOIR_API void ly_lexer_init(ly_lexer* lexer, ch_context* context, ch_source* source, ly_lexer_mode mode);
 
+/// @brief Stage the next character (and stride) in the lexer.
+/// See @c lexer->current_codepoint for the decoded character codepoint and @c lexer->current_stride for the number of bytes comprising that codepoint.
 CHOIR_API void ly_lexer_next_character(ly_lexer* lexer);
+
+/// @brief Read the next preprocessor token from the lexer.
+/// Even in Laye code, for API consistency, the lexer implementation assumes a preprocessor is the next stage in the process.
+/// This is largely only necessary for @c pp-number or @c pp-identifier tokens from C source text, neither of which will survive in Laye lexing modes, but the API name remains the same regardless as Laye still assumes a preprocessor.
+CHOIR_API ly_token ly_lexer_read_pp_token(ly_lexer* lexer);
+
+/// @brief Push a new lexer mode, overriding the previous one for the duration.
+/// @ref ly_lexer_pop_mode
+CHOIR_API void ly_lexer_push_mode(ly_lexer* lexer, ly_lexer_mode mode);
+
+/// @brief Pop the current lexer mode, restoring the previous mode.
+/// @ref ly_lexer_push_mode
+CHOIR_API void ly_lexer_pop_mode(ly_lexer* lexer);
 
 ///===--------------------------------------===///
 /// Preprocessor API.

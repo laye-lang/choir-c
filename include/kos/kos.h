@@ -57,6 +57,9 @@ extern "C" {
         goto defer;           \
     } while (0)
 
+#define k_scope_defer(Expr) \
+    for (int _k_scope_defer_##__LINE__ = 0; _k_scope_defer_##__LINE__ == 0; (i++, (Expr)))
+
 #define k_cast(T) (T)
 #define k_discard (void)
 
@@ -153,7 +156,7 @@ extern "C" {
     } while (0)
 
 #define K_STR_FMT       "%.*s"
-#define K_STR_EXPAND(S) ch_cast(int)(S).count, (S).data
+#define K_STR_EXPAND(S) k_cast(int)(S).count, (S).data
 
 #define K_SV_CONST(cstr) \
     (k_string_view) { .data = cstr, .count = k_cast(isize_t)(sizeof(cstr) / sizeof(char)) - 1 }
@@ -274,6 +277,9 @@ typedef void (*k_diag_callback)(void* userdata, k_diag_data_group group);
 /// Used to process incoming diagnostic requests and delegate them to a callback.
 /// Handles constructing diagnostic groups and tracks things like the error count.
 typedef struct k_diag {
+    /// @brief The arena to allocate strings into when formatting diagnostics.
+    k_arena* string_arena;
+
     /// @brief User-provided diagnostic callback.
     /// Can accept a userdata pointer which must be set on this struct.
     k_diag_callback callback;
@@ -344,6 +350,10 @@ k_string_view k_sv_from_cstr(const char* cstr);
 /// @brief Create a sub-string view into the given string view.
 k_string_view k_sv_slice(k_string_view sv, isize_t offset, isize_t count);
 
+/// @brief Skip characters until a character @c c is encountered.
+/// Returns the skipped characters and modifies the original string view to point at the encountered character, or the end of the string view if it was not found.
+k_string_view k_sv_take_until(k_string_view* sv, char c);
+
 /// @brief Appends formatted text to the given string.
 void k_sprintf(k_string* s, const char* format, ...);
 
@@ -356,7 +366,7 @@ void k_vsprintf(k_string* s, const char* format, va_list v);
 
 void k_diag_formatted(void* userdata, k_diag_data_group group);
 
-void k_diag_init(k_diag* diag, k_diag_callback callback, void* userdata);
+void k_diag_init(k_diag* diag, k_arena* string_arena, k_diag_callback callback, void* userdata);
 void k_diag_deinit(k_diag* diag);
 void k_diag_flush(k_diag* diag);
 void k_diag_emit(k_diag* diag, k_diag_data diag_data);

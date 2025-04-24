@@ -17,6 +17,9 @@ extern "C" {
 #    define CHOIR_API extern
 #endif // CHOIR_BUILD_DLL
 
+#define ch_asserts(Diag, Cond, Source, Location, Msg) \
+    k_assertsf((Diag), (Cond), ((k_diag_source){ .name = (Source)->name, .text = (Source)->text, .use_byte_offset = true, .byte_offset = (Location) }), Msg)
+
 ///===--------------------------------------===///
 /// Data types.
 ///===--------------------------------------===///

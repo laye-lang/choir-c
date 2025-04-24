@@ -1,4 +1,5 @@
 #include <laye/core.h>
+#include <laye/diag.h>
 
 static bool ly_lexer_peek_raw(ly_lexer* lexer, isize_t peek_position, int32_t* out_codepoint, isize_t* out_stride);
 static int32_t ly_lexer_peek(ly_lexer* lexer, int ahead);
@@ -9,6 +10,7 @@ CHOIR_API void ly_lexer_init(ly_lexer* lexer, ch_context* context, ch_source* so
     *lexer = (ly_lexer){
         .context = context,
         .source = source,
+        .is_at_start_of_line = true,
         .mode = mode,
         // Initialize tracking for __FILE__ and __LINE__.
         .current_file_name = source->name,
@@ -115,9 +117,132 @@ CHOIR_API void ly_lexer_next_character(ly_lexer* lexer) {
         return;
     }
 
+    if (lexer->current_codepoint == '\n') {
+        lexer->current_line_number++;
+        lexer->is_at_start_of_line = true;
+    }
+
     lexer->current_position += lexer->current_stride;
     if (!ly_lexer_peek_raw(lexer, lexer->current_position, &lexer->current_codepoint, &lexer->current_stride)) {
         lexer->current_codepoint = 0;
         lexer->current_stride = 0;
     }
+}
+
+static void ly_lexer_read_relevant_trivia(ly_lexer* lexer, bool is_leading) {
+    assert(lexer != nullptr);
+
+    ly_lexer_mode mode = lexer->mode;
+    isize_t begin_position = lexer->current_position;
+
+    while (lexer->current_codepoint != 0) {
+        int32_t c = lexer->current_codepoint;
+        switch (c) {
+            default: goto done_reading_trivia;
+
+            case '#': {
+                if (lexer->current_position == 0 && ly_lexer_peek(lexer, 1) == '!') {
+                    ly_lexer_next_character(lexer); // omnom '#'
+                    ly_lexer_next_character(lexer); // omnom '!'
+                    // TODO(local): store the text of this shebang and throw it in a trivia, it'll be important eventually.
+                    while (lexer->current_codepoint != 0 && lexer->current_codepoint != '\n') {
+                        ly_lexer_next_character(lexer); // omnom anything that isn't the end of line/file
+                    }
+                } else goto done_reading_trivia;
+            } break;
+
+            case '/': {
+                if (ly_lexer_peek(lexer, 1) == '/') {
+                    ly_lexer_next_character(lexer); // omnom '/'
+                    ly_lexer_next_character(lexer); // omnom '/'
+                    // TODO(local): store the text of this line comment and throw it in a trivia, it'll be important eventually.
+                    while (lexer->current_codepoint != 0 && lexer->current_codepoint != '\n') {
+                        ly_lexer_next_character(lexer); // omnom anything that isn't the end of line/file
+                    }
+                } else if (ly_lexer_peek(lexer, 1) == '*') {
+                    ly_lexer_next_character(lexer); // omnom '/'
+                    ly_lexer_next_character(lexer); // omnom '*'
+                    // TODO(local): store the text of this line comment and throw it in a trivia, it'll be important eventually.
+                    int comment_nesting = 1;
+                    int32_t prev_codepoint = 0;
+                    while (lexer->current_codepoint != 0 && comment_nesting > 0) {
+                        int32_t c = lexer->current_codepoint;
+                        if (c == '/' && prev_codepoint == '*') {
+                            prev_codepoint = 0;
+                            comment_nesting--;
+                        } else if (0 != (mode & LY_LEXMODE_LAYE) && c == '*' && prev_codepoint == '/') {
+                            prev_codepoint = 0;
+                            comment_nesting++;
+                        }
+
+                        prev_codepoint = c;
+                        ly_lexer_next_character(lexer); // omnom anything until we get to the end of comment/file
+                    }
+
+                    if (comment_nesting > 0) {
+                        ly_err_unclosed_comment(lexer->context->diag, lexer->source, begin_position);
+                    }
+                } else goto done_reading_trivia;
+            } break;
+
+            case ' ':
+            case '\t':
+            case '\n':
+            case '\v': {
+                ly_lexer_next_character(lexer); // omnom whitespace
+            } break;
+        }
+    }
+
+done_reading_trivia:;
+    // TODO(local): When we're ready to *store* trivia, put it in a list and return it here.
+    return;
+}
+
+CHOIR_API ly_token ly_lexer_read_pp_token(ly_lexer* lexer) {
+    assert(lexer != nullptr);
+
+    isize_t begin_position = lexer->current_position;
+    // TODO(local): Store the trivia in a trivia list for later.
+    ly_lexer_read_relevant_trivia(lexer, true);
+
+    ly_lexer_mode mode = lexer->mode;
+    bool at_start_of_line = lexer->is_at_start_of_line;
+    bool has_white_space_before = begin_position != lexer->current_position;
+
+    ly_token_kind kind = LY_TK_INVALID;
+    int32_t c = lexer->current_codepoint;
+
+    begin_position = lexer->current_position;
+    switch (c) {
+        default: {
+            ly_lexer_next_character(lexer);
+            ly_err_invalid_character(lexer->context->diag, lexer->source, begin_position);
+        } break;
+    }
+
+    isize_t end_position = lexer->current_position;
+    ch_asserts(lexer->context->diag, end_position > begin_position, lexer->source, begin_position, "Lexer did not consume a character.");
+
+    ch_range range = {
+        .source = lexer->source,
+        .begin = begin_position,
+        .end = end_position,
+    };
+
+    // TODO(local): Store the trivia in a trivia list for later.
+    ly_lexer_read_relevant_trivia(lexer, false);
+
+    return (ly_token){
+        .kind = kind,
+        .at_start_of_line = at_start_of_line,
+        .has_white_space_before = has_white_space_before,
+        .range = range,
+    };
+}
+
+CHOIR_API void ly_lexer_push_mode(ly_lexer* lexer, ly_lexer_mode mode) {
+}
+
+CHOIR_API void ly_lexer_pop_mode(ly_lexer* lexer) {
 }
