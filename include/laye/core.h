@@ -153,6 +153,8 @@ struct ly_lexer {
 
     k_string_view current_file_name;
     int64_t current_line_number;
+
+    ly_lexer_mode mode;
 };
 
 struct ly_preprocessor {
@@ -182,7 +184,7 @@ CHOIR_API ly_token_key ly_token_kind_get_key(ly_token_kind kind);
 /// Lexer API.
 ///===--------------------------------------===///
 
-CHOIR_API void ly_lexer_init(ly_lexer* lexer, ch_context* context, ch_source* source);
+CHOIR_API void ly_lexer_init(ly_lexer* lexer, ch_context* context, ch_source* source, ly_lexer_mode mode);
 
 CHOIR_API void ly_lexer_next_character(ly_lexer* lexer);
 

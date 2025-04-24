@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     };
 
     ly_lexer lexer = {0};
-    ly_lexer_init(&lexer, &context, &source);
+    ly_lexer_init(&lexer, &context, &source, LY_LEXMODE_C);
 
     while (lexer.current_codepoint != 0) {
         fprintf(stderr, "%c", k_cast(int)lexer.current_codepoint);

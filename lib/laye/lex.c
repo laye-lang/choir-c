@@ -3,12 +3,13 @@
 static bool ly_lexer_peek_raw(ly_lexer* lexer, isize_t peek_position, int32_t* out_codepoint, isize_t* out_stride);
 static int32_t ly_lexer_peek(ly_lexer* lexer, int ahead);
 
-CHOIR_API void ly_lexer_init(ly_lexer* lexer, ch_context* context, ch_source* source) {
+CHOIR_API void ly_lexer_init(ly_lexer* lexer, ch_context* context, ch_source* source, ly_lexer_mode mode) {
     if (lexer == nullptr) return;
 
     *lexer = (ly_lexer){
         .context = context,
         .source = source,
+        .mode = mode,
         // Initialize tracking for __FILE__ and __LINE__.
         .current_file_name = source->name,
         .current_line_number = 1,
@@ -62,7 +63,7 @@ static bool ly_lexer_peek_raw(ly_lexer* lexer, isize_t peek_position, int32_t* o
         // I don't think it does, but we need to test it and check the standard.
 
         // The sequences '\\\n', '\\\r', '\\\n\r' and '\\\r\n' should all be handled as a single ' '.
-        if (codepoint == '\\' && K_UNICODE_SUCCESS == k_utf8_decode(text_data, text_count, peek_position, &ahead_codepoint, &ahead_stride) && (ahead_codepoint == '\r' || ahead_codepoint == '\n')) {
+        if (0 != (lexer->mode & LY_LEXMODE_C) && codepoint == '\\' && K_UNICODE_SUCCESS == k_utf8_decode(text_data, text_count, peek_position, &ahead_codepoint, &ahead_stride) && (ahead_codepoint == '\r' || ahead_codepoint == '\n')) {
             codepoint = ' ';
             stride += ahead_stride;
             peek_position += ahead_stride;
