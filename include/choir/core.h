@@ -70,15 +70,22 @@ typedef struct ch_range {
     ch_location end;
 } ch_range;
 
+typedef struct ch_context {
+    k_diag* diag;
+    k_arena* string_arena;
+} ch_context;
+
 ///===--------------------------------------===///
 /// Size & Alignment API.
 ///===--------------------------------------===///
 
 /// @brief Returns the minimum number of bytes required (as padding, for example) to add to 'size' such that it, as an offset, is aligned to 'align'.
 CHOIR_API ch_size_t ch_align_padding(ch_size_t size, ch_align_t align);
+
 /// @brief Returns 'size' aligned to 'align'.
 /// This is achieved by adding the minimum number of padding bytes to 'size' such that it, as an offset, is aligned to 'align'.
 CHOIR_API ch_size_t ch_align_to(ch_size_t size, ch_align_t align);
+
 /// @brief Returns the minimum valid alignment to to align something to at least 'bytes' bytes.
 /// This will always be the next power of two and never zero.
 CHOIR_API ch_align_t ch_align_for_bytes(ch_size_t bytes);
@@ -86,6 +93,8 @@ CHOIR_API ch_align_t ch_align_for_bytes(ch_size_t bytes);
 ///===--------------------------------------===///
 /// Context API.
 ///===--------------------------------------===///
+
+CHOIR_API void ch_context_init(k_diag* diag, k_arena* string_arena);
 
 #if defined(__cplusplus)
 }

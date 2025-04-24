@@ -45,10 +45,35 @@ typedef enum ly_token_key {
 /// @brief Describes the kind of a source text token.
 /// @ref ly_token
 typedef enum ly_token_kind {
-#define LY_TOKEN(id) LY_TK_##id,
+#define LY_TOKEN(Id) LY_TK_##Id,
 #include "tokens.h"
     LY_TOKEN_KIND_COUNT,
 } ly_token_kind;
+
+/// @brief Describes the kind of a Laye untyped syntax node.
+/// @ref ly_parse_node
+typedef enum ly_parse_node_kind {
+#define LY_PARSE_NODE(Id) LY_PN_##Id,
+#include "parse_nodes.h"
+    LY_PARSE_NODE_KIND_COUNT,
+} ly_parse_node_kind;
+
+/// @brief Describes the kind of a Laye typed syntax node.
+/// @ref ly_sema_node
+typedef enum ly_sema_node_kind {
+#define LY_SEMA_NODE(Id) LY_SN_##Id,
+#include "sema_nodes.h"
+    LY_SEMA_NODE_KIND_COUNT,
+} ly_sema_node_kind;
+
+typedef enum ly_lexer_mode {
+    LY_LEXMODE_NONE = 0,
+    LY_LEXMODE_LAYE = 1 << 0,
+    LY_LEXMODE_C = 1 << 1,
+    LY_LEXMODE_DIRECTIVE = 1 << 2,
+    LY_LEXMODE_HEADER_NAMES = 1 << 3,
+    LY_LEXMODE_REJECTED_BRANCH = 1 << 4,
+} ly_lexer_mode;
 
 /// @brief Token information for all variants of C and Laye.
 /// @ref ly_token_kind
@@ -59,7 +84,27 @@ typedef struct ly_tokens {
     K_DA_DECLARE_INLINE(ly_token);
 } ly_tokens;
 
+/// @brief Node in the Laye untyped syntax tree.
+/// @ref ly_parse_node_kind
+typedef struct ly_parse_node ly_parse_node;
+
+/// @brief A dynamic array of parse nodes.
+typedef struct ly_parse_nodes {
+    K_DA_DECLARE_INLINE(ly_parse_node);
+} ly_parse_nodes;
+
+/// @brief Node in the Laye typed syntax tree.
+/// @ref ly_sema_node_kind
+typedef struct ly_sema_node ly_sema_node;
+
+/// @brief A dynamic array of sema nodes.
+typedef struct ly_sema_nodes {
+    K_DA_DECLARE_INLINE(ly_sema_node);
+} ly_sema_nodes;
+
 typedef struct ly_translation_unit ly_translation_unit;
+
+typedef struct ly_module_unit ly_module_unit;
 
 typedef struct ly_lexer ly_lexer;
 
@@ -98,6 +143,19 @@ struct ly_token {
     };
 };
 
+struct ly_lexer {
+    ch_context* context;
+
+    ch_source* source;
+    isize_t current_position : 56;
+    isize_t current_stride   : 8;
+    int32_t current_codepoint;
+};
+
+struct ly_preprocessor {
+    ch_context* context;
+};
+
 ///===--------------------------------------===///
 /// Token API.
 ///===--------------------------------------===///
@@ -121,9 +179,19 @@ CHOIR_API ly_token_key ly_token_kind_get_key(ly_token_kind kind);
 /// Lexer API.
 ///===--------------------------------------===///
 
+CHOIR_API void ly_lexer_init(ly_lexer* lexer, ch_context* context, ch_source* source);
+
+CHOIR_API void ly_lexer_next_character(ly_lexer* lexer);
+
 ///===--------------------------------------===///
 /// Preprocessor API.
 ///===--------------------------------------===///
+
+CHOIR_API void ly_pp_init(ly_preprocessor* pp, ch_context* context);
+
+CHOIR_API void ly_pp_push_source(ly_preprocessor* pp, ch_source* source);
+
+CHOIR_API void ly_preprocess(ly_preprocessor* pp, ly_tokens* out_tokens);
 
 ///===--------------------------------------===///
 /// Parser API.

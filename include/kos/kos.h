@@ -57,6 +57,28 @@ extern "C" {
     } while (0)
 
 #define k_cast(T) (T)
+#define k_discard (void)
+
+#define k_assert(Diag, Cond, Msg)                                                                                                                   \
+    do {                                                                                                                                            \
+        if (!(Cond)) {                                                                                                                              \
+            k_diag_emit((Diag), ((k_diag_source){ .level = K_DIAG_FATAL, .message = K_SV_CONST("Assertion failed: " Msg "\nCondition: " #Cond) })); \
+        }                                                                                                                                           \
+    } while (0)
+
+#define k_assertf(Diag, Cond, Fmt, ...)                                                                                   \
+    do {                                                                                                                  \
+        if (!(Cond)) {                                                                                                    \
+            k_diag_emitf((Diag), K_DIAG_FATAL, "Assertion failed: " Fmt "\nCondition: " #Cond __VA_OPT__(,) __VA_ARGS__); \
+        }                                                                                                                 \
+    } while (0)
+
+#define k_assertsf(Diag, Cond, Source, Fmt, ...)                                                                                     \
+    do {                                                                                                                             \
+        if (!(Cond)) {                                                                                                               \
+            k_diag_emitsf((Diag), K_DIAG_FATAL, (Source), "Assertion failed: " Fmt "\nCondition: " #Cond __VA_OPT__(,) __VA_ARGS__); \
+        }                                                                                                                            \
+    } while (0)
 
 #ifndef K_DA_INIT_CAP
 /// @brief Initial capacity of a dynamic array.
@@ -139,7 +161,32 @@ extern "C" {
 /// Data types.
 ///===--------------------------------------===///
 
+/// @brief Signed analog to @c size_t.
 typedef ptrdiff_t isize_t;
+
+/// @brief The distinct diagnostic levels.
+typedef enum k_diag_level {
+    /// @brief Indicates this diagnostic should be ignored.
+    K_DIAG_IGNORE,
+
+    /// @brief The level of a diagnostic which is grouped with the previous non-note diagnostic.
+    K_DIAG_NOTE,
+
+    /// @brief Used to report non-critical information to the user, maybe for debug purposes.
+    K_DIAG_REMARK,
+
+    /// @brief Used to report potentially unwanted or unintended behavior in the program.
+    K_DIAG_WARNING,
+
+    /// @brief Used to report expected or recoverable errors in the program.
+    K_DIAG_ERROR,
+
+    /// @brief Indicates a diagnostic reports an unrecoverable state.
+    /// After a fatal diagnostic is reported, the program is aborted.
+    /// As this terminates the program, no notes can be associated with it by default; this may be configurable in the future.
+    /// This can be used to implement formatted asserts.
+    K_DIAG_FATAL,
+} k_diag_level;
 
 /// @brief A single block in an arena.
 /// You should not be using this type directly.
@@ -165,6 +212,83 @@ typedef struct k_string {
     K_DA_DECLARE_INLINE(char);
 } k_string;
 
+/// @brief Optional source information for reporting diagnostics within files.
+/// None of these fields are required; if empty or zero, they should be ignored when generating the diagnostic output.
+/// This means, for example, a binary file could point to a byte_offset without providing any text to display, and the diagnostic callbacks should handle that correctly.
+typedef struct k_diag_source {
+    /// @brief The name of this source, if available.
+    k_string_view name;
+    /// @brief The text of this source, if available.
+    k_string_view text;
+
+    /// @brief True if the @c byte_offset field is to be used for source location reporting; false otherwise.
+    bool use_byte_offset;
+    union {
+        struct {
+            /// @brief The 1-based line into the text of this source.
+            /// If no source text is present, this may still be rendered in diagnostics.
+            isize_t line;
+            /// @brief the 1-based column into the text of this source.
+            /// If no source text is present, this may still be rendered in diagnostics.
+            isize_t column;
+        };
+
+        /// @brief The 0-based byte offset into the contents of this source.
+        /// If no source text is present, this may still be rendered in diagnostics.
+        /// This is the most logical choice for binary files, for example.
+        isize_t byte_offset;
+    };
+} k_diag_source;
+
+/// @brief Grouped data about a single diagnostic message.
+typedef struct k_diag_data {
+    /// @brief The level of this diagnostic.
+    k_diag_level level;
+
+    /// @brief The optional source of this diagnostic.
+    k_diag_source source;
+
+    /// @brief The message of this diagnostic.
+    k_string_view message;
+} k_diag_data;
+
+/// @brief A dynamic array of diagnostic data, representing a logical group of diagnostics.
+typedef struct k_diag_data_group {
+    K_DA_DECLARE_INLINE(k_diag_data);
+} k_diag_data_group;
+
+/// @brief The type of a diagnostic callback provided to the diagnostic system.
+/// Allows implementing custom behavior for diagnostic handling.
+typedef void (*k_diag_callback)(void* userdata, k_diag_data_group group);
+
+/// @brief The underlying state of a diagnostic engine.
+/// Used to process incoming diagnostic requests and delegate them to a callback.
+/// Handles constructing diagnostic groups and tracks things like the error count.
+typedef struct k_diag {
+    /// @brief User-provided diagnostic callback.
+    /// Can accept a userdata pointer which must be set on this struct.
+    k_diag_callback callback;
+
+    /// @brief User-provided diagnostic callback userdata.
+    /// Will be passed to the callback when a diagnostic group is ready to be processed.
+    void* callback_userdata;
+
+    /// @brief The in-progress diagnostic group.
+    /// Once a non-note diagnostic would be added to a non-empty group, it is flushed automatically and a new group is started.
+    k_diag_data_group diag_group;
+
+    /// @brief Keeps track of the number of errors that have been accepted by the diagnostic engine.
+    int32_t error_count;
+
+    /// @brief If non-zero, the maximum number of errors this diagnostic engine can report.
+    /// If any more errors are submitted, they are marked as ignored instead.
+    /// The first time an error is ignored this way, one final error notifying the user that the error limit has been reached is submitted in its place.
+    int32_t error_limit;
+
+    bool has_reported_error_limit_reached;
+    bool last_diag_was_ignored;
+} k_diag;
+
 ///===--------------------------------------===///
 /// Arenas API.
 ///===--------------------------------------===///
@@ -185,12 +309,31 @@ void* k_arena_alloc(k_arena* arena, size_t size);
 /// Strings API.
 ///===--------------------------------------===///
 
+/// @brief Create a @c k_string_view from readonly data and a count.
 k_string_view k_sv(const char* data, isize_t count);
+
+/// @brief Create a @c k_string_view from a NUL-terminated C string.
 k_string_view k_sv_from_cstr(const char* cstr);
+
+/// @brief Create a sub-string view into the given string view.
 k_string_view k_sv_slice(k_string_view sv, isize_t offset, isize_t count);
 
+/// @brief Appends formatted text to the given string.
 void k_sprintf(k_string* s, const char* format, ...);
+
+/// @brief Appends formatted text to the given string.
 void k_vsprintf(k_string* s, const char* format, va_list v);
+
+///===--------------------------------------===///
+/// Diagnostic API.
+///===--------------------------------------===///
+
+void k_diag_init(k_diag* diag, k_diag_callback callback, void* userdata);
+void k_diag_deinit(k_diag* diag);
+void k_diag_flush(k_diag* diag);
+void k_diag_emit(k_diag* diag, k_diag_data diag_data);
+void k_diag_emitf(k_diag* diag, k_diag_level level, const char* format, ...);
+void k_diag_emitsf(k_diag* diag, k_diag_level level, k_diag_source source, const char* format, ...);
 
 #if defined(__cplusplus)
 }

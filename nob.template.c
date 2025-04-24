@@ -14,7 +14,7 @@
 #define CCLY_EXECUTABLE_FILE  "ccly"
 
 #if defined(NOBCONFIG_MISSING)
-#    error No nob configuration has been specified. Please copy the relevant config file from the config directory for your platform and toolchain into the appropriate 'nob_config.<PLATFORM>.h' file.
+#    error No nob configuration has been specified. Please copy the relevant config file from the config directory for your platform and toolchain into the appropriate '<PLATFORM>.h' file.
 #endif
 
 #define NOB_IMPLEMENTATION
@@ -27,12 +27,15 @@ typedef struct {
 
 static source_paths libchoir_files[] = {
     {"lib/kos/arena.c", ODIR "/kos-arena.o"},
+    {"lib/kos/diag.c", ODIR "/kos-diag.o"},
     {"lib/kos/string.c", ODIR "/kos-string.o"},
 
     {"lib/choir/size_align.c", ODIR "/choir-size_align.o"},
 
+    {"lib/laye/lex.c", ODIR "/laye-lex.o"},
+    {"lib/laye/pp.core.c", ODIR "/laye-pp-core.o"},
     {"lib/laye/token.c", ODIR "/laye-token.o"},
-    
+
     {0},
 };
 
