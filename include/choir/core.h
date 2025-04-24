@@ -94,7 +94,7 @@ CHOIR_API ch_align_t ch_align_for_bytes(ch_size_t bytes);
 /// Context API.
 ///===--------------------------------------===///
 
-CHOIR_API void ch_context_init(k_diag* diag, k_arena* string_arena);
+CHOIR_API void ch_context_init(ch_context* context, k_diag* diag, k_arena* string_arena);
 
 #if defined(__cplusplus)
 }

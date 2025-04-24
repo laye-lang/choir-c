@@ -67,3 +67,7 @@ void k_diag_emit(k_diag* diag, k_diag_data diag_data) {
         abort();
     }
 }
+
+void k_diag_formatted(void* userdata, k_diag_data_group group) {
+    k_diag_formatted_state state = *(k_diag_formatted_state*)userdata;
+}

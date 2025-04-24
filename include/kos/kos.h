@@ -18,6 +18,7 @@ extern "C" {
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -62,7 +63,7 @@ extern "C" {
 #define k_assert(Diag, Cond, Msg)                                                                                                                   \
     do {                                                                                                                                            \
         if (!(Cond)) {                                                                                                                              \
-            k_diag_emit((Diag), ((k_diag_source){ .level = K_DIAG_FATAL, .message = K_SV_CONST("Assertion failed: " Msg "\nCondition: " #Cond) })); \
+            k_diag_emit((Diag), ((k_diag_data){ .level = K_DIAG_FATAL, .message = K_SV_CONST("Assertion failed: " Msg "\nCondition: " #Cond) })); \
         }                                                                                                                                           \
     } while (0)
 
@@ -188,6 +189,14 @@ typedef enum k_diag_level {
     K_DIAG_FATAL,
 } k_diag_level;
 
+typedef enum k_unicode_decode_result {
+    K_UNICODE_SUCCESS = 0,
+    K_UNICODE_END_OF_DATA,
+    K_UNICODE_OUT_OF_RANGE,
+    K_UNICODE_INVALID_START_BYTE,
+    K_UNICODE_INVALID_CONTINUE_BYTE,
+} k_unicode_decode_result;
+
 /// @brief A single block in an arena.
 /// You should not be using this type directly.
 typedef struct k_arena_block {
@@ -289,6 +298,10 @@ typedef struct k_diag {
     bool last_diag_was_ignored;
 } k_diag;
 
+typedef struct k_diag_formatted_state {
+    FILE* output_stream;
+} k_diag_formatted_state;
+
 ///===--------------------------------------===///
 /// Arenas API.
 ///===--------------------------------------===///
@@ -304,6 +317,19 @@ void k_arena_deinit(k_arena* arena);
 /// @brief Allocate @c size number of bytes in this arena.
 /// The memory will be zeroed and aligned to K_ARENA_ALIGN bytes.
 void* k_arena_alloc(k_arena* arena, size_t size);
+
+///===--------------------------------------===///
+/// Unicode API.
+///===--------------------------------------===///
+
+/// @brief Decodes a UTF-8 codepoint from byte-string data.
+/// @param data The input data, assumed to be valid UTF-8 bytes.
+/// @param data_count The number of bytes available in the input data.
+/// @param offset The offset into the input data to decode from. Should be in the range [0, @c data_count) to attempt decoding.
+/// @param out_codepoint If non-null, the memory to populate with the decoded codepoint value.
+/// @param out_stride If non-null, the memory to populate with the byte stride of the decoded codepoint value.
+/// @return @c K_UNICODE_SUCCESS if a codepoint was successfully decoded, otherwise another @c k_unicode_decode_result value indicating the reason for failure.
+k_unicode_decode_result k_utf8_decode(const char* data, isize_t data_count, isize_t offset, int32_t* out_codepoint, isize_t* out_stride);
 
 ///===--------------------------------------===///
 /// Strings API.
@@ -327,6 +353,8 @@ void k_vsprintf(k_string* s, const char* format, va_list v);
 ///===--------------------------------------===///
 /// Diagnostic API.
 ///===--------------------------------------===///
+
+void k_diag_formatted(void* userdata, k_diag_data_group group);
 
 void k_diag_init(k_diag* diag, k_diag_callback callback, void* userdata);
 void k_diag_deinit(k_diag* diag);

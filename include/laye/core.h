@@ -147,9 +147,12 @@ struct ly_lexer {
     ch_context* context;
 
     ch_source* source;
-    isize_t current_position : 56;
-    isize_t current_stride   : 8;
+    isize_t current_position;
+    isize_t current_stride;
     int32_t current_codepoint;
+
+    k_string_view current_file_name;
+    int64_t current_line_number;
 };
 
 struct ly_preprocessor {

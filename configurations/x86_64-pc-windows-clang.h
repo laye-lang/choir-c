@@ -7,8 +7,8 @@
 
 #define LIB_MSVC
 
-#define LCONFIG 
-#define CFLAGS "-std=c23", "-Wall", "-Wextra", "-Wno-trigraphs", "-Wno-unused-parameter", "-Werror", "-Werror=return-type", "-pedantic", "-pedantic-errors", "-ggdb", "-fsanitize=address" LCONFIG
+#define LCONFIG
+#define CFLAGS "-std=c23", "-Wall", "-Wextra", "-Wno-trigraphs", "-Wno-unused", "-Wno-unused-parameter", "-Wno-unused-function", "-Wno-unused-variable", "-Werror", "-Werror=return-type", "-pedantic", "-pedantic-errors", "-ggdb", "-fsanitize=address" LCONFIG
 #define LDFLAGS "-fsanitize=address"
 
 #define EXE_EXT ".exe"

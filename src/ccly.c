@@ -1,26 +1,30 @@
-#include <stdio.h>
-/// include choir last
 #include <choir/core.h>
 #include <laye/core.h>
 
 int main(int argc, char** argv) {
-    for (isize_t i = 0; i < LY_TOKEN_KIND_COUNT; i++) {
-        ly_token_kind kind = k_cast(ly_token_kind) i;
+    k_arena string_arena = {0};
+    k_arena_init(&string_arena);
 
-        const char* name_spelling = ly_token_kind_get_name(kind);
-        fprintf(stderr, "%s", name_spelling);
+    k_diag diag = {0};
+    k_diag_formatted_state diag_userdata = {
+        .output_stream = stderr,
+    };
+    k_diag_init(&diag, k_diag_formatted, &diag_userdata);
 
-        const char* token_spelling = ly_token_kind_get_spelling(kind);
-        if (token_spelling != nullptr) {
-            fprintf(stderr, "  ::  %s", token_spelling);
-        }
+    ch_context context = {0};
+    ch_context_init(&context, &diag, &string_arena);
 
-        ly_token_key token_key = ly_token_kind_get_key(kind);
-        if (token_key != LY_TKKEY_NOT_KW) {
-            fprintf(stderr, "  ::  %d", token_key);
-        }
+    ch_source source = {
+        .name = K_SV_CONST("foo.c"),
+        .text = K_SV_CONST("#define FOO\\\r\n    0\nint main() {\r\n    return FOO;\n\r}")
+    };
 
-        fprintf(stderr, "\n");
+    ly_lexer lexer = {0};
+    ly_lexer_init(&lexer, &context, &source);
+
+    while (lexer.current_codepoint != 0) {
+        fprintf(stderr, "%c", k_cast(int)lexer.current_codepoint);
+        ly_lexer_next_character(&lexer);
     }
 
     return 0;
