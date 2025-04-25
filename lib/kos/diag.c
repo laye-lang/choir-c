@@ -120,7 +120,13 @@ void k_diag_emitsf(k_diag* diag, k_diag_level level, k_diag_source source, const
 }
 
 void k_diag_formatted(void* userdata, k_diag_data_group group) {
-    k_diag_formatted_state state = *(k_diag_formatted_state*)userdata;
+    k_diag_formatted_state* state = userdata;
+
+    if (!state->has_emitted_diag_group) {
+        state->has_emitted_diag_group = true;
+    } else {
+        fprintf(stderr, "\n");
+    }
 
     int well_edge_width = 2;
     int well_number_width_min = 3;
@@ -144,8 +150,17 @@ void k_diag_formatted(void* userdata, k_diag_data_group group) {
 
         fprintf(stderr, "[");
         const char* level_name = level_names[diag.level];
-        fprintf(stderr, "%s%s\x1b[0m", level_colors[diag.level], level_name);
+        if (state->use_color) {
+            fprintf(stderr, "%s%s\x1b[0m", level_colors[diag.level], level_name);
+        } else {
+            fprintf(stderr, "%s", level_name);
+        }
         fprintf(stderr, "]");
+
+        // we won't render source text unless there's also a name to format, because the text is pretty useless without a name associated to it.
+        bool has_source_text = diag.source.name.count > 0 && diag.source.text.count > 0;
+        k_string_view message = diag.message;
+        k_string_view message_line = k_sv_take_until(&message, '\n');
 
         if (diag.source.name.count > 0) {
             fprintf(stderr, "@"K_STR_FMT, K_STR_EXPAND(diag.source.name));
@@ -155,26 +170,57 @@ void k_diag_formatted(void* userdata, k_diag_data_group group) {
                 fprintf(stderr, "(%lld,%lld)", diag.source.line, diag.source.column);
             }
 
-            fprintf(stderr, "\n│ ");
-            for (int i = 0; i < well_inner_width; i++)
-                fprintf(stderr, " ");
-            fprintf(stderr, " ├─ ");
+            // When there's no source text and we're at the bottom, make the well bottom shorter.
+            if (!has_source_text && gi == group.count - 1 && message.count == 0) {
+                render_well_bottom = false;
+                fprintf(stderr, "\n╰─");
+                for (int i = 0; i < well_inner_width; i++)
+                    fprintf(stderr, "─");
+                fprintf(stderr, "─┴─ ");
+            } else {
+                fprintf(stderr, "\n│ ");
+                for (int i = 0; i < well_inner_width; i++)
+                    fprintf(stderr, " ");
+                fprintf(stderr, " ├─ ");
+            }
         } else fprintf(stderr, ": ");
 
-        k_string_view message = diag.message;
-        k_string_view message_line = k_sv_take_until(&message, '\n');
-        fprintf(stderr, "\x1b[1m"K_STR_FMT"\x1b[0m\n", K_STR_EXPAND(message_line));
+        if (state->use_color) {
+            fprintf(stderr, "\x1b[1m"K_STR_FMT"\x1b[0m\n", K_STR_EXPAND(message_line));
+        } else {
+            fprintf(stderr, K_STR_FMT"\n", K_STR_EXPAND(message_line));
+        }
 
         while (message.count > 0) {
-            fprintf(stderr, "│ ");
-            for (int i = 0; i < well_inner_width; i++)
-                fprintf(stderr, " ");
-            fprintf(stderr, " │");
-            for (isize_t i = 0; i < 6 + k_cast(isize_t)strlen(level_name) - (4 + well_inner_width); i++)
-                fprintf(stderr, " ");
-
             message_line = k_sv_take_until(&message, '\n');
-            fprintf(stderr, K_STR_FMT"\n", K_STR_EXPAND(message_line));
+
+            // When there's no source text and we're at the bottom, make the well bottom shorter.
+            if (!has_source_text && gi == group.count && message.count == 0) {
+                render_well_bottom = false;
+                fprintf(stderr, "╰─");
+                for (int i = 0; i < well_inner_width; i++)
+                    fprintf(stderr, "─");
+                fprintf(stderr, "─╯");
+                for (isize_t i = 0; i < 6 + k_cast(isize_t)strlen(level_name) - (4 + well_inner_width); i++)
+                    fprintf(stderr, " ");
+            } else {
+                fprintf(stderr, "│ ");
+                for (int i = 0; i < well_inner_width; i++)
+                    fprintf(stderr, " ");
+                fprintf(stderr, " │");
+                for (isize_t i = 0; i < 6 + k_cast(isize_t)strlen(level_name) - (4 + well_inner_width); i++)
+                    fprintf(stderr, " ");
+            }
+
+            if (state->use_color) {
+                fprintf(stderr, "\x1b[1m"K_STR_FMT"\x1b[0m\n", K_STR_EXPAND(message_line));
+            } else {
+                fprintf(stderr, K_STR_FMT"\n", K_STR_EXPAND(message_line));
+            }
+        }
+
+        if (has_source_text) {
+            // TODO(local): Render source text in diagnostic messages.
         }
     }
 

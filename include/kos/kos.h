@@ -306,6 +306,8 @@ typedef struct k_diag {
 
 typedef struct k_diag_formatted_state {
     FILE* output_stream;
+    bool use_color;
+    bool has_emitted_diag_group;
 } k_diag_formatted_state;
 
 ///===--------------------------------------===///
