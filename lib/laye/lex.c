@@ -4,6 +4,21 @@
 static bool ly_lexer_peek_raw(ly_lexer* lexer, isize_t peek_position, int32_t* out_codepoint, isize_t* out_stride);
 static int32_t ly_lexer_peek(ly_lexer* lexer, int ahead);
 
+static bool ly_lexer_is_c(ly_lexer* lexer) {
+    assert(lexer != nullptr);
+    return 0 != (lexer->mode & LY_LEXMODE_C);
+}
+
+static bool ly_lexer_is_laye(ly_lexer* lexer) {
+    assert(lexer != nullptr);
+    return 0 != (lexer->mode & LY_LEXMODE_LAYE);
+}
+
+static bool ly_lexer_suppress_diags(ly_lexer* lexer) {
+    assert(lexer != nullptr);
+    return 0 != (lexer->mode & LY_LEXMODE_REJECTED_BRANCH);
+}
+
 CHOIR_API void ly_lexer_init(ly_lexer* lexer, ch_context* context, ch_source* source, ly_lexer_mode mode) {
     if (lexer == nullptr) return;
 
@@ -159,6 +174,8 @@ static void ly_lexer_read_relevant_trivia(ly_lexer* lexer, bool is_leading) {
                     while (lexer->current_codepoint != 0 && lexer->current_codepoint != '\n') {
                         ly_lexer_next_character(lexer); // omnom anything that isn't the end of line/file
                     }
+                    // newlines will end the trailing trivia list
+                    if (!is_leading) goto done_reading_trivia;
                 } else if (ly_lexer_peek(lexer, 1) == '*') {
                     ly_lexer_next_character(lexer); // omnom '/'
                     ly_lexer_next_character(lexer); // omnom '*'
@@ -180,16 +197,25 @@ static void ly_lexer_read_relevant_trivia(ly_lexer* lexer, bool is_leading) {
                     }
 
                     if (comment_nesting > 0) {
-                        ly_err_unclosed_comment(lexer->context->diag, lexer->source, begin_position);
+                        if (!ly_lexer_suppress_diags(lexer))
+                            ly_err_unclosed_comment(lexer->context->diag, lexer->source, begin_position);
                     }
                 } else goto done_reading_trivia;
             } break;
 
             case ' ':
             case '\t':
-            case '\n':
-            case '\v': {
+            case '\v':
+            is_white_space_trivia: {
                 ly_lexer_next_character(lexer); // omnom whitespace
+            } break;
+
+            case '\n': {
+                // newlines will end the trailing trivia list
+                if (!is_leading) goto done_reading_trivia;
+                if (0 != (lexer->mode & LY_LEXMODE_DIRECTIVE)) {
+                    goto done_reading_trivia; // this will be lexed as a directive end token
+                } ly_lexer_next_character(lexer); // omnom whitespace
             } break;
         }
     }
@@ -197,6 +223,16 @@ static void ly_lexer_read_relevant_trivia(ly_lexer* lexer, bool is_leading) {
 done_reading_trivia:;
     // TODO(local): When we're ready to *store* trivia, put it in a list and return it here.
     return;
+}
+
+static bool ly_lexer_try_advance(ly_lexer* lexer, int32_t codepoint) {
+    assert(lexer != nullptr);
+    if (lexer->current_codepoint == codepoint) {
+        ly_lexer_next_character(lexer);
+        return true;
+    }
+
+    return false;
 }
 
 CHOIR_API ly_token ly_lexer_read_pp_token(ly_lexer* lexer) {
@@ -211,13 +247,165 @@ CHOIR_API ly_token ly_lexer_read_pp_token(ly_lexer* lexer) {
     bool has_white_space_before = begin_position != lexer->current_position;
 
     ly_token_kind kind = LY_TK_INVALID;
-    int32_t c = lexer->current_codepoint;
-
     begin_position = lexer->current_position;
+
+    int32_t c = lexer->current_codepoint;
+    ly_lexer_next_character(lexer);
+
     switch (c) {
         default: {
-            ly_lexer_next_character(lexer);
-            ly_err_invalid_character(lexer->context->diag, lexer->source, begin_position);
+            if (!ly_lexer_suppress_diags(lexer))
+                ly_err_invalid_character(lexer->context->diag, lexer->source, begin_position);
+        } break;
+
+        case '\n': {
+            ch_asserts(lexer->context->diag, 0 != (lexer->mode & LY_LEXMODE_DIRECTIVE), lexer->source, begin_position, "The newline character is white space unless within a preprocessing directive.");
+            kind = LY_TK_PP_END_OF_DIRECTIVE;
+        } break;
+
+        case '#': {
+            if (ly_lexer_is_c(lexer) && ly_lexer_try_advance(lexer, '#')) {
+                kind = LY_TK_HASH_HASH;
+            } else if (ly_lexer_is_laye(lexer) && ly_lexer_try_advance(lexer, '[')) {
+                kind = LY_TK_HASH_SQUARE;
+            } else kind = LY_TK_HASH;
+        } break;
+
+        case '(': kind = LY_TK_OPEN_PAREN; break;
+        case ')': kind = LY_TK_CLOSE_PAREN; break;
+        case '[': kind = LY_TK_OPEN_SQUARE; break;
+        case ']': kind = LY_TK_CLOSE_SQUARE; break;
+        case '{': kind = LY_TK_OPEN_CURLY; break;
+        case '}': kind = LY_TK_CLOSE_CURLY; break;
+
+        case ',': kind = LY_TK_COMMA; break;
+        case ';': kind = LY_TK_SEMI_COLON; break;
+
+        case '.': {
+            if (ly_lexer_is_c(lexer) && ly_lexer_peek(lexer, 0) == '.' && ly_lexer_peek(lexer, 1) == '.') {
+                ly_lexer_next_character(lexer); // omnom '.' 2
+                ly_lexer_next_character(lexer); // omnom '.' 3
+                kind = LY_TK_DOT_DOT_DOT;
+            } else if (ly_lexer_is_laye(lexer) && ly_lexer_try_advance(lexer, '.')) {
+                if (ly_lexer_try_advance(lexer, '=')) {
+                    kind = LY_TK_DOT_DOT_EQUAL;
+                } else kind = LY_TK_DOT_DOT;
+            } else kind = LY_TK_DOT;
+        } break;
+
+        case ':': {
+            if (ly_lexer_try_advance(lexer, ':')) {
+                kind = LY_TK_COLON_COLON;
+            } else kind = LY_TK_COLON;
+        } break;
+
+        case '=': {
+            if (ly_lexer_try_advance(lexer, '=')) {
+                kind = LY_TK_EQUAL_EQUAL;
+            } else if (ly_lexer_is_laye(lexer) && ly_lexer_try_advance(lexer, '>')) {
+                kind = LY_TK_EQUAL_GREATER;
+            } else kind = LY_TK_EQUAL;
+        } break;
+
+        case '!': {
+            if (ly_lexer_try_advance(lexer, '=')) {
+                kind = LY_TK_BANG_EQUAL;
+            } else kind = LY_TK_BANG;
+        } break;
+
+        case '<': {
+            if (ly_lexer_try_advance(lexer, '=')) {
+                if (ly_lexer_is_laye(lexer) && ly_lexer_try_advance(lexer, '>')) {
+                    kind = LY_TK_LESS_EQUAL_GREATER;
+                } kind = LY_TK_LESS_EQUAL;
+            } else if (ly_lexer_try_advance(lexer, '<')) {
+                if (ly_lexer_try_advance(lexer, '=')) {
+                    kind = LY_TK_LESS_LESS_EQUAL;
+                } kind = LY_TK_LESS_LESS;
+            } else kind = LY_TK_LESS;
+        } break;
+
+        case '>': {
+            if (ly_lexer_try_advance(lexer, '=')) {
+                kind = LY_TK_GREATER_EQUAL;
+            } else if (ly_lexer_try_advance(lexer, '>')) {
+                if (ly_lexer_try_advance(lexer, '=')) {
+                    kind = LY_TK_GREATER_GREATER_EQUAL;
+                } kind = LY_TK_GREATER_GREATER;
+            } else kind = LY_TK_GREATER;
+        } break;
+
+        case '+': {
+            if (ly_lexer_try_advance(lexer, '=')) {
+                kind = LY_TK_PLUS_EQUAL;
+            } else if (ly_lexer_try_advance(lexer, '+')) {
+                kind = LY_TK_PLUS_PLUS;
+            } else kind = LY_TK_PLUS;
+        } break;
+
+        case '-': {
+            if (ly_lexer_try_advance(lexer, '=')) {
+                kind = LY_TK_MINUS_EQUAL;
+            } else if (ly_lexer_try_advance(lexer, '-')) {
+                kind = LY_TK_MINUS_MINUS;
+            } else if (ly_lexer_try_advance(lexer, '>')) {
+                kind = LY_TK_MINUS_GREATER;
+            } else kind = LY_TK_MINUS;
+        } break;
+
+        case '*': {
+            if (ly_lexer_try_advance(lexer, '=')) {
+                kind = LY_TK_STAR_EQUAL;
+            } else kind = LY_TK_STAR;
+        } break;
+
+        case '/': {
+            if (ly_lexer_try_advance(lexer, '=')) {
+                kind = LY_TK_SLASH_EQUAL;
+            } else kind = LY_TK_SLASH;
+        } break;
+
+        case '%': {
+            // TODO(local): If we decide to support trigraphs, and they're enabled here, lex them.
+            if (ly_lexer_try_advance(lexer, '=')) {
+                kind = LY_TK_PERCENT_EQUAL;
+            } else kind = LY_TK_PERCENT;
+        } break;
+
+        case '^': {
+            if (ly_lexer_try_advance(lexer, '=')) {
+                kind = LY_TK_CARET_EQUAL;
+            } else kind = LY_TK_CARET;
+        } break;
+
+        case '~': {
+            if (ly_lexer_is_laye(lexer) && ly_lexer_try_advance(lexer, '=')) {
+                kind = LY_TK_TILDE_EQUAL;
+            } else kind = LY_TK_TILDE;
+        } break;
+
+        case '&': {
+            if (ly_lexer_try_advance(lexer, '=')) {
+                kind = LY_TK_AMPERSAND_EQUAL;
+            } else if (ly_lexer_try_advance(lexer, '&')) {
+                kind = LY_TK_AMPERSAND_AMPERSAND;
+            } else kind = LY_TK_AMPERSAND;
+        } break;
+
+        case '|': {
+            if (ly_lexer_try_advance(lexer, '=')) {
+                kind = LY_TK_PIPE_EQUAL;
+            } else if (ly_lexer_try_advance(lexer, '|')) {
+                kind = LY_TK_PIPE_PIPE;
+            } else kind = LY_TK_PIPE;
+        } break;
+
+        case '?': {
+            if (ly_lexer_is_laye(lexer) && ly_lexer_try_advance(lexer, '?')) {
+                if (ly_lexer_try_advance(lexer, '=')) {
+                    kind = LY_TK_QUESTION_QUESTION_EQUAL;
+                } else kind = LY_TK_QUESTION_QUESTION;
+            } else kind = LY_TK_QUESTION;
         } break;
     }
 

@@ -129,6 +129,13 @@ struct ly_token {
     /// @brief The source range of this token.
     ch_range range;
 
+    /// @brief The line this token is on, as defined by the preprocessor.
+    /// This is only needed if a token expands a macro which results in a @c __FILE__ or @c __LINE__ macro, both of which will use this information from this token.
+    int32_t preprocessor_line;
+    /// @brief The file this token is in, as defined by the preprocessor.
+    /// This is only needed if a token expands a macro which results in a @c __FILE__ or @c __LINE__ macro, both of which will use this information from this token.
+    k_string_view preprocessor_file;
+
     union {
         /// @brief The textual value of this token for identifiers, preprocessing numbers and keywords.
         k_string_view text_value;
