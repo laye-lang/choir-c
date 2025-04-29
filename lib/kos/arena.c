@@ -17,7 +17,8 @@ void k_arena_deinit(k_arena* arena) {
 }
 
 void* k_arena_alloc(k_arena* arena, size_t size) {
-    isize_t aligned_size = k_cast(isize_t)((K_ARENA_ALIGN - (size % K_ARENA_ALIGN)) % K_ARENA_ALIGN);
+    isize_t aligned_size = k_cast(isize_t)(size + (K_ARENA_ALIGN - (size % K_ARENA_ALIGN)) % K_ARENA_ALIGN);
+    assert(aligned_size > 0);
     assert(aligned_size <= K_ARENA_BLOCK_SIZE);
 
     k_arena_block* block = nullptr;
