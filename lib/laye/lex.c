@@ -38,6 +38,10 @@ CHOIR_API void ly_lexer_init(ly_lexer* lexer, ch_context* context, ch_source* so
     }
 }
 
+static bool ly_lexer_is_at_end(ly_lexer* lexer) {
+    return lexer->current_codepoint == 0 || lexer->current_position >= lexer->source->text.count;
+}
+
 static bool ly_lexer_peek_raw(ly_lexer* lexer, isize_t peek_position, int32_t* out_codepoint, isize_t* out_stride) {
     assert(lexer != nullptr);
 
@@ -289,7 +293,9 @@ CHOIR_API ly_token ly_lexer_read_pp_token(ly_lexer* lexer) {
         case ';': token.kind = LY_TK_SEMI_COLON; break;
 
         case '.': {
-            if (ly_lexer_is_c(lexer) && ly_lexer_peek(lexer, 0) == '.' && ly_lexer_peek(lexer, 1) == '.') {
+            if (ly_lexer_is_c(lexer) && lexer->current_codepoint >= '0' && lexer->current_codepoint <= '9') {
+                goto lex_pp_number;
+            } else if (ly_lexer_is_c(lexer) && ly_lexer_peek(lexer, 0) == '.' && ly_lexer_peek(lexer, 1) == '.') {
                 ly_lexer_next_character(lexer); // omnom '.' 2
                 ly_lexer_next_character(lexer); // omnom '.' 3
                 token.kind = LY_TK_DOT_DOT_DOT;
@@ -449,6 +455,46 @@ CHOIR_API ly_token ly_lexer_read_pp_token(ly_lexer* lexer) {
             k_da_free(&ident_builder);
 
             token.kind = LY_TK_PP_NOT_KEYWORD;
+        } break;
+
+        lex_pp_number:
+        case '0': case '1': case '2': case '3': case '4':
+        case '5': case '6': case '7': case '8': case '9': {
+            if (ly_lexer_is_c(lexer)) {
+                // lex pp numbers
+                while (!ly_lexer_is_at_end(lexer)) {
+                    if (lexer->current_codepoint == '.')
+                        ly_lexer_next_character(lexer);
+                    else if (lexer->current_codepoint == '\'' && ly_lexer_peek(lexer, 1) >= '0' && ly_lexer_peek(lexer, 1) <= '9') {
+                        ly_lexer_next_character(lexer); // omnom single quote
+                        ly_lexer_next_character(lexer); // omnom digit
+                    } else if (
+                        (lexer->current_codepoint == 'e' || lexer->current_codepoint == 'E' || lexer->current_codepoint == 'p' || lexer->current_codepoint == 'P') &&
+                        (ly_lexer_peek(lexer, 1) == '+' || ly_lexer_peek(lexer, 1) == '-')
+                    ) {
+                        ly_lexer_next_character(lexer); // omnom exponent character
+                        ly_lexer_next_character(lexer); // omnom sign
+                    } else if ( // TODO(local): Syntax facts functions for identifiers n stuff.
+                        (lexer->current_codepoint >= 'a' && lexer->current_codepoint <= 'z') ||
+                        (lexer->current_codepoint >= 'A' && lexer->current_codepoint <= 'Z') ||
+                        (lexer->current_codepoint >= '0' && lexer->current_codepoint <= '9') ||
+                        lexer->current_codepoint == '_' || lexer->current_codepoint == '$'
+                    ) {
+                        ly_lexer_next_character(lexer); // omnom identifier continue
+                    } else break;
+                }
+
+                token.kind = LY_TK_PP_NUMBER;
+            } else {
+                // lex laye numbers
+
+                // TODO(local): Actually scan and lex all the fun Laye number tokens.
+                while (lexer->current_codepoint >= '0' && lexer->current_codepoint <= '9') {
+                    ly_lexer_next_character(lexer);
+                }
+
+                token.kind = LY_TK_INTEGER_CONSTANT;
+            }
         } break;
     }
 
